@@ -4,7 +4,26 @@
   "minQueue": 1,
   "topics": [],
   "repos": [],
-  "posts": [],
+  "posts": [
+    {
+      "id": "yeni-1",
+      "published": false,
+      "draft": true,
+      "caption": "",
+      "slides": [
+        {
+          "type": "cover",
+          "title": "Proje Adı",
+          "subtitle": "Tek cümlelik açıklama"
+        },
+        {
+          "type": "cta",
+          "title": "Yıldız ver ⭐",
+          "text": "github.com/kullanici/proje"
+        }
+      ]
+    }
+  ],
   "minStars": 10000,
   "brand": {
     "name": "Repo Rehberi",

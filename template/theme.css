@@ -69,3 +69,10 @@ h1, .bignum { background: linear-gradient(100deg, var(--fg) 20%, var(--accent) 1
 .cards { display: flex; flex-direction: column; gap: 26px; }
 .card { display: flex; align-items: center; gap: 30px; padding: 28px 36px; border-radius: 32px; border: 2px solid var(--line); background: linear-gradient(135deg, var(--bg2), transparent); font-size: 46px; font-weight: 600; line-height: 1.25; color: var(--fg); }
 .ci { flex: none; width: 100px; height: 100px; border-radius: 28px; display: flex; align-items: center; justify-content: center; font-size: 60px; background: var(--bg2); border: 2px solid var(--accent); box-shadow: 0 0 40px var(--glow); }
+
+/* yıldız aralığı temaları (lacivert/siyah ailesi, 5 ton) */
+.slide.theme-rising { --bg:#05131a; --bg2:#0b2530; --fg:#ecfff9; --muted:#9bc7c0; --accent:#2ee6a6; --accent2:#22d3ee; --code-bg:#030c11; --glow:rgba(46,230,166,.30); --line:#16525a; }
+.slide.theme-blue { --bg:#060d1f; --bg2:#0e1c3d; --fg:#eaf2ff; --muted:#9fb0d0; --accent:#3b9bff; --accent2:#22d3ee; --code-bg:#040813; --glow:rgba(59,155,255,.32); --line:#1d3a6e; }
+.slide.theme-violet { --bg:#0a0720; --bg2:#17114a; --fg:#f0ecff; --muted:#a9a0d6; --accent:#8b6bff; --accent2:#38bdf8; --code-bg:#060416; --glow:rgba(139,107,255,.34); --line:#35307a; }
+.slide.theme-magenta { --bg:#12061c; --bg2:#26103a; --fg:#fff0fb; --muted:#cfa2c8; --accent:#ff4fd8; --accent2:#8b6bff; --code-bg:#0b0412; --glow:rgba(255,79,216,.30); --line:#552068; }
+.slide.theme-gold { --bg:#150d05; --bg2:#2a1a0a; --fg:#fff6e8; --muted:#d1b58d; --accent:#ffb02e; --accent2:#ff6a3d; --code-bg:#0d0803; --glow:rgba(255,176,46,.30); --line:#68421a; }

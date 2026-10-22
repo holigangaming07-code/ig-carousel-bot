@@ -14,6 +14,7 @@ const TYPES = {
 const THEMES = [
   ['', 'GitHub Dark', '#2f81f7,#0d1117'], ['sunset', 'Sunset', '#ff7a45,#1a0f1f'], ['neon', 'Neon', '#b45cff,#0b0820'],
   ['forest', 'Forest', '#34d399,#0c1a14'], ['paper', 'Paper', '#c2410c,#f6f1e7'],
+  ['rising', 'Yükselen', '#2ee6a6,#05131a'], ['blue', 'Popüler', '#3b9bff,#060d1f'], ['violet', 'Çok popüler', '#8b6bff,#0a0720'], ['magenta', 'Efsane', '#ff4fd8,#12061c'], ['gold', 'Dev', '#ffb02e,#150d05'],
 ];
 let data, css, tpl, pi = 0, si = 0, saveT, thumbT;
 const post = () => data.posts[pi];

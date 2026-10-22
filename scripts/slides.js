@@ -75,7 +75,17 @@
       .replace('{{COUNTER}}', `${index + 1}/${total}`);
   }
 
-  const THEME_IDS = ['', 'sunset', 'neon', 'forest', 'paper'];
+  const THEME_IDS = ['', 'sunset', 'neon', 'forest', 'paper', 'rising', 'blue', 'violet', 'magenta', 'gold'];
+
+  // yıldız aralığına göre renk tonu ve kapak etiketi
+  const TIERS = [
+    { max: 1000, theme: 'rising', label: '🌱 Yükselen proje' },
+    { max: 10000, theme: 'blue', label: '🔥 Popüler proje' },
+    { max: 50000, theme: 'violet', label: '🚀 Çok popüler proje' },
+    { max: 150000, theme: 'magenta', label: '💎 Efsane proje' },
+    { max: Infinity, theme: 'gold', label: '👑 GitHub devi' },
+  ];
+  const tierFor = (stars) => TIERS.find((t) => stars < t.max);
   const INSTALL_RE = /^(npm (i|install)|npx|yarn add|pnpm (add|dlx)|pip3? install|pipx install|cargo install|brew install|go install|docker run|curl .*\| ?(ba)?sh)\b/;
 
   // README metninden kurulum komutlarını (kod bloklarından) ayıklar
@@ -120,12 +130,13 @@
         : { type: 'step', number: 2, title: 'İçine gir', code: `cd ${g.name}`, text: "Sonra README'deki kurulum komutunu çalıştır." },
     ];
     return {
-      id, published: false, theme: theme === undefined ? 'neon' : theme, source: g.full_name,
+      id, published: false, theme: theme === undefined ? tierFor(g.stargazers_count).theme : theme, source: g.full_name,
       caption: `${ai.hook || `${g.name} — ${g.description || 'harika bir açık kaynak proje'}`} 🚀\n\n${ai.explain || ''}${ai.explain ? '\n\n' : ''}Kaydır ve kurulumu gör.\n\n${g.html_url}\n\n${tags}`,
       slides: [
-        { type: 'cover', icon: ai.icon || '⭐', title: g.name, subtitle: ai.tagline || clean(g.description) || '' },
+        { type: 'cover', badge: tierFor(g.stargazers_count).label, icon: ai.icon || '⭐', title: g.name, subtitle: ai.tagline || clean(g.description) || '' },
         { type: 'explain', kicker: 'Ne işe yarar?', icon: '💡', text: ai.explain || firstParagraph(readme) || clean(g.description) || g.name },
         { type: 'cards', title: 'Neler yapabiliyor?', items: ai.features && ai.features.length ? ai.features : feats.map((f, i) => `${['⚙️', '📜', '🍴', '🕒'][i] || '✦'} ${f}`) },
+        ...(ai.audience && ai.audience.length ? [{ type: 'cards', title: 'Kimler için uygun?', items: ai.audience }] : []),
         { type: 'stat', value: stars, title: 'GitHub yıldızı', text: `${fork} kez fork edildi` },
         ...steps,
         { type: 'cta', title: 'Yıldız ver ⭐', text: `github.com/${g.full_name}` },
@@ -133,7 +144,7 @@
     };
   }
 
-  const api = { esc, builders, fill, installCommands, postFromRepo, THEME_IDS };
+  const api = { esc, builders, fill, installCommands, postFromRepo, THEME_IDS, tierFor };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Slides = api;
 })(this);
