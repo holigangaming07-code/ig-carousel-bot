@@ -29,5 +29,25 @@
     "name": "Repo Rehberi",
     "handle": "@reporehberi",
     "tag": "GitHub Rehberi"
-  }
+  },
+  "accounts": [
+    {
+      "id": "tr",
+      "lang": "tr",
+      "enabled": true,
+      "brand": {
+        "name": "Repo Rehberi",
+        "handle": "@reporehberi"
+      }
+    },
+    {
+      "id": "en",
+      "lang": "en",
+      "enabled": false,
+      "brand": {
+        "name": "Repo Guide",
+        "handle": "@repoguide"
+      }
+    }
+  ]
 }

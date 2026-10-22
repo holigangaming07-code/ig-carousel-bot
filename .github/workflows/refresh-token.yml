@@ -9,10 +9,12 @@ on:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Token'ı yenile ve secret'ı güncelle
+      - name: Token'ları yenile ve secret'ları güncelle
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_ACCESS_TOKEN_EN: ${{ secrets.IG_ACCESS_TOKEN_EN }}
           FB_APP_ID: ${{ secrets.FB_APP_ID }}
           FB_APP_SECRET: ${{ secrets.FB_APP_SECRET }}
           GH_TOKEN: ${{ secrets.GH_PAT }}
@@ -21,16 +23,21 @@ jobs:
           for v in IG_ACCESS_TOKEN FB_APP_ID FB_APP_SECRET GH_TOKEN; do
             if [ -z "${!v}" ]; then echo "HATA: $v secret'ı tanımlı değil"; exit 1; fi
           done
-          RES=$(curl -sS -G "https://graph.facebook.com/v21.0/oauth/access_token" \
-            --data-urlencode "grant_type=fb_exchange_token" \
-            --data-urlencode "client_id=$FB_APP_ID" \
-            --data-urlencode "client_secret=$FB_APP_SECRET" \
-            --data-urlencode "fb_exchange_token=$IG_ACCESS_TOKEN")
-          NEW=$(echo "$RES" | jq -r '.access_token // empty')
-          if [ -z "$NEW" ]; then
-            echo "HATA: Token yenilenemedi: $(echo "$RES" | jq -r '.error.message // .')"
-            exit 1
-          fi
-          echo "::add-mask::$NEW"
-          gh secret set IG_ACCESS_TOKEN --repo "$GITHUB_REPOSITORY" --body "$NEW"
-          echo "Token yenilendi."
+          # İngilizce hesap ayrı bir token kullanıyorsa onu da yenile (yoksa atlanır)
+          for NAME in IG_ACCESS_TOKEN IG_ACCESS_TOKEN_EN; do
+            OLD="${!NAME}"
+            if [ -z "$OLD" ]; then echo "$NAME tanımlı değil, atlandı."; continue; fi
+            RES=$(curl -sS -G "https://graph.facebook.com/v21.0/oauth/access_token" \
+              --data-urlencode "grant_type=fb_exchange_token" \
+              --data-urlencode "client_id=$FB_APP_ID" \
+              --data-urlencode "client_secret=$FB_APP_SECRET" \
+              --data-urlencode "fb_exchange_token=$OLD")
+            NEW=$(echo "$RES" | jq -r '.access_token // empty')
+            if [ -z "$NEW" ]; then
+              echo "HATA: $NAME yenilenemedi: $(echo "$RES" | jq -r '.error.message // .')"
+              exit 1
+            fi
+            echo "::add-mask::$NEW"
+            gh secret set "$NAME" --repo "$GITHUB_REPOSITORY" --body "$NEW"
+            echo "$NAME yenilendi."
+          done

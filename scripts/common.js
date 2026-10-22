@@ -17,6 +17,18 @@ function savePosts(data) {
   fs.writeFileSync(POSTS_FILE, JSON.stringify(data, null, 2) + '\n');
 }
 
+// yayınlanmayı bekleyen tüm postlar (POST_ID verilirse yalnızca o)
+function pendingPosts(data) {
+  const wanted = process.env.POST_ID;
+  const list = wanted ? data.posts.filter((p) => p.id === wanted) : data.posts.filter((p) => !p.published && !p.draft);
+  for (const post of list) {
+    if (!Array.isArray(post.slides) || post.slides.length < 2 || post.slides.length > 10) {
+      fail(`"${post.id}" postu 2-10 slayt içermeli (Instagram carousel sınırı).`);
+    }
+  }
+  return list;
+}
+
 // POST_ID verilirse onu, yoksa yayınlanmamış ilk postu seçer
 function pickPost(data) {
   const wanted = process.env.POST_ID;
@@ -35,4 +47,4 @@ function fail(msg) {
   process.exit(1);
 }
 
-module.exports = { ROOT, loadPosts, savePosts, pickPost, fail };
+module.exports = { ROOT, loadPosts, savePosts, pickPost, pendingPosts, fail };

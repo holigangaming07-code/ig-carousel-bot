@@ -1,13 +1,25 @@
-// Render edilmiş postu Instagram Graph API ile carousel olarak yayınlar.
-const { loadPosts, savePosts, pickPost, fail } = require('./common');
+// Render edilmiş postları Instagram Graph API ile carousel olarak yayınlar.
+// Her post kendi hesabının anahtarlarını kullanır:
+//   tr -> IG_USER_ID / IG_ACCESS_TOKEN
+//   en -> IG_USER_ID_EN / IG_ACCESS_TOKEN_EN (yoksa IG_ACCESS_TOKEN)
+const { loadPosts, savePosts, pendingPosts, fail } = require('./common');
 
 const API = 'https://graph.facebook.com/v21.0';
-const { IG_USER_ID, IG_ACCESS_TOKEN } = process.env;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function api(method, p, params = {}) {
+function creds(account) {
+  const id = (account || 'tr').toLowerCase();
+  const sfx = id === 'tr' ? '' : `_${id.toUpperCase()}`;
+  return {
+    userId: process.env[`IG_USER_ID${sfx}`],
+    token: process.env[`IG_ACCESS_TOKEN${sfx}`] || process.env.IG_ACCESS_TOKEN,
+    names: `IG_USER_ID${sfx} ve IG_ACCESS_TOKEN${sfx}`,
+  };
+}
+
+async function api(c, method, p, params = {}) {
   const url = new URL(`${API}/${p}`);
-  const body = new URLSearchParams({ ...params, access_token: IG_ACCESS_TOKEN });
+  const body = new URLSearchParams({ ...params, access_token: c.token });
   let res;
   if (method === 'GET') {
     body.forEach((v, k) => url.searchParams.set(k, v));
@@ -33,58 +45,71 @@ async function waitForUrl(url, tries = 12, delayMs = 10000) {
     }
     await sleep(delayMs);
   }
-  fail(`Görsel URL'ine erişilemiyor: ${url}\nRepo public mu ve dosya push edildi mi kontrol et.`);
+  throw new Error(`Görsel URL'ine erişilemiyor: ${url}\nRepo public mu ve dosya push edildi mi kontrol et.`);
 }
 
-async function waitContainer(id, tries = 30, delayMs = 5000) {
+async function waitContainer(c, id, tries = 30, delayMs = 5000) {
   for (let i = 1; i <= tries; i++) {
-    const { status_code } = await api('GET', id, { fields: 'status_code' });
+    const { status_code } = await api(c, 'GET', id, { fields: 'status_code' });
     console.log(`  container durumu: ${status_code}`);
     if (status_code === 'FINISHED') return;
-    if (status_code === 'ERROR' || status_code === 'EXPIRED') fail(`Container ${status_code} durumuna düştü.`);
+    if (status_code === 'ERROR' || status_code === 'EXPIRED') throw new Error(`Container ${status_code} durumuna düştü.`);
     await sleep(delayMs);
   }
-  fail('Container zaman aşımına uğradı.');
+  throw new Error('Container zaman aşımına uğradı.');
 }
 
-(async () => {
-  const data = loadPosts();
-  const post = pickPost(data);
-  if (!post) return console.log('Yayınlanacak yeni post yok.');
-
-  if (process.env.DRY_RUN === 'true') return console.log(`DRY_RUN: "${post.id}" yayınlanmadı.`);
-  if (!IG_USER_ID || !IG_ACCESS_TOKEN) fail('IG_USER_ID ve IG_ACCESS_TOKEN ortam değişkenleri tanımlı olmalı (GitHub Secrets).');
-
+async function publish(data, post, c) {
   const repo = process.env.GITHUB_REPOSITORY || data.repo;
   const branch = process.env.BRANCH || data.branch || 'main';
   const urls = post.slides.map((_, i) => `https://raw.githubusercontent.com/${repo}/${branch}/output/${post.id}/slide-${i + 1}.jpg`);
 
-  console.log('Görsel URL\'leri doğrulanıyor...');
+  console.log("Görsel URL'leri doğrulanıyor...");
   for (const u of urls) await waitForUrl(u);
 
-  console.log('Slayt container\'ları oluşturuluyor...');
+  console.log("Slayt container'ları oluşturuluyor...");
   const children = [];
   for (const u of urls) {
-    const { id } = await api('POST', `${IG_USER_ID}/media`, { image_url: u, is_carousel_item: 'true' });
+    const { id } = await api(c, 'POST', `${c.userId}/media`, { image_url: u, is_carousel_item: 'true' });
     children.push(id);
     console.log(`  ✔ ${id}`);
   }
-  for (const id of children) await waitContainer(id);
+  for (const id of children) await waitContainer(c, id);
 
   console.log('Carousel container oluşturuluyor...');
-  const { id: carouselId } = await api('POST', `${IG_USER_ID}/media`, {
+  const { id: carouselId } = await api(c, 'POST', `${c.userId}/media`, {
     media_type: 'CAROUSEL',
     children: children.join(','),
     caption: post.caption || '',
   });
-  await waitContainer(carouselId);
+  await waitContainer(c, carouselId);
 
   console.log('Yayınlanıyor...');
-  const { id: mediaId } = await api('POST', `${IG_USER_ID}/media_publish`, { creation_id: carouselId });
-  console.log(`✔ Yayınlandı. Media ID: ${mediaId}`);
+  const { id: mediaId } = await api(c, 'POST', `${c.userId}/media_publish`, { creation_id: carouselId });
+  console.log(`✔ Yayınlandı (${post.account || 'tr'}). Media ID: ${mediaId}`);
 
   post.published = true;
   post.mediaId = mediaId;
   post.publishedAt = new Date().toISOString();
   savePosts(data);
+}
+
+(async () => {
+  const data = loadPosts();
+  const posts = pendingPosts(data);
+  if (!posts.length) return console.log('Yayınlanacak yeni post yok.');
+  if (process.env.DRY_RUN === 'true') return console.log(`DRY_RUN: ${posts.map((p) => p.id).join(', ')} yayınlanmadı.`);
+
+  const errors = [];
+  for (const post of posts) {
+    const c = creds(post.account);
+    console.log(`\n=== ${post.id} (${post.account || 'tr'}) ===`);
+    if (!c.userId || !c.token) { errors.push(`${post.id}: ${c.names} tanımlı değil (GitHub Secrets).`); continue; }
+    try {
+      await publish(data, post, c);
+    } catch (e) {
+      errors.push(`${post.id}: ${e.message}`);
+    }
+  }
+  if (errors.length) fail(errors.join('\n'));
 })().catch((e) => fail(e.message));

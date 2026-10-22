@@ -58,14 +58,24 @@
 
 
   // ---- Repo Rehberi şablonu: hazır arka plan resimleri (template/rv) + üstüne yazılan metin ----
-  let LAYOUT = null;
-  let BG = (n) => `../template/rv/${n}.jpg`;
-  if (typeof module !== 'undefined' && module.exports) { try { LAYOUT = require('../template/rv/layout.json'); } catch (e) { /* layout yoksa rv slaytları çizilemez */ } }
+  const LAYOUTS = {};
+  let BG = (n, lang) => `../template/rv/${lang && lang !== 'tr' ? lang + '/' : ''}${n}.jpg`;
+  if (typeof module !== 'undefined' && module.exports) { try { LAYOUTS.tr = require('../template/rv/layout.json'); } catch (e) { /* layout yoksa rv slaytları çizilemez */ }
+    try { LAYOUTS.en = require('../template/rv/en/layout.json'); } catch (e) { /* İngilizce şablon henüz yok */ } }
   const arr = (a) => (Array.isArray(a) ? a : []);
   const stepText = (t) => String((t && t.text) || t || '').replace(/^[\s\u20E3\uFE0F0-9.)\-]+(?=\S)/u, '');
   // yıldız seviyesine göre arka plan tonu (0-999 gri, 1K yeşil, 10K mavi (özgün), 50K mor, 100K+ altın)
   const TONES = ['saturate(.12) brightness(1.12)', 'hue-rotate(-105deg) saturate(1.05)', 'none', 'hue-rotate(38deg)', 'hue-rotate(160deg) saturate(1.3)'];
   const CY = '#43d9ff';
+  const I18N = {
+    tr: { stars: 'YILDIZ', fork: 'FORK', offers: 'Ne sunuyor?', examples: 'Arama örnekleri', noteT: 'Önemli not', search: 'ARA', locale: 'tr-TR',
+      swipe: 'Kaydır ve detayları gör.', nice: 'harika bir açık kaynak proje', tryIt: 'Projeyi kendi bilgisayarında denemek istersen.', then: 'Sonra: ', readme: "Detaylar için README'ye bak.",
+      written: (l) => (l ? `${l} ile yazıldı` : 'Açık kaynak'), licensed: (l) => `${l} lisanslı`, forked: (n) => `${n} kez fork edildi`, updated: (d) => `Son güncelleme: ${d}`, address: 'Adres' },
+    en: { stars: 'STARS', fork: 'FORKS', offers: 'What it offers', examples: 'Search examples', noteT: 'Important note', search: 'SEARCH', locale: 'en-US',
+      swipe: 'Swipe to see the details.', nice: 'a great open-source project', tryIt: 'If you want to try it on your own computer.', then: 'Then: ', readme: 'See the README for details.',
+      written: (l) => (l ? `Written in ${l}` : 'Open source'), licensed: (l) => `${l} licensed`, forked: (n) => `Forked ${n} times`, updated: (d) => `Last update: ${d}`, address: 'Link' },
+  };
+  const tx = (s) => I18N[s.lang] || I18N.tr;
 
   // kutuya sığan en büyük yazı boyutu (sözcük sarmalı tahmini)
   function linesFor(text, w, fs, cw) {
@@ -77,7 +87,7 @@
     }
     return lines;
   }
-  const cwOf = (f) => (f.mono ? 0.62 : f.up ? 0.74 : f.fw >= 800 ? 0.6 : f.fw >= 700 ? 0.575 : 0.55);
+  const cwOf = (f) => (f.mono ? 0.62 : f.up ? 0.76 : f.fw >= 800 ? 0.63 : f.fw >= 700 ? 0.605 : f.fw >= 600 ? 0.585 : 0.565);
   function fit1(text, f) {
     for (let fs = f.fs; fs >= f.mn; fs--) if (linesFor(text, f.w, fs, cwOf(f)) * f.lh * fs <= f.h + 1) return fs;
     return f.mn;
@@ -91,7 +101,8 @@
   }
 
   function plate(name, d, c, draw) {
-    const L = LAYOUT && LAYOUT.slides[name];
+    const lang = LAYOUTS[d.lang] ? d.lang : 'tr';
+    const L = LAYOUTS[lang] && LAYOUTS[lang].slides[name];
     if (!L) throw new Error('rv yerleşimi yüklenmedi');
     const out = [];
     const base = (f, fs, inner, extra) => `<div class="fx${f.grad ? ' grad' : ''}${f.nw ? ' nw' : ''}" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fs}px;color:${f.c};font-weight:${f.fw};text-align:${f.al};line-height:${f.lh};${f.mono ? "font-family:Consolas,'DejaVu Sans Mono',monospace;" : ''}${f.up ? 'text-transform:uppercase;letter-spacing:.5px;' : ''}${f.rot ? `transform:rotate(${f.rot}deg);` : ''}${extra || ''}"><div>${inner}</div></div>`;
@@ -105,20 +116,20 @@
     const tier = Math.max(0, Math.min(4, Number.isInteger(d.tier) ? d.tier : 2));
     const r = L.legend[tier];
     const glow = r ? `<div class="lg" style="left:${r[0] - 3}px;top:${r[1] - 3}px;width:${r[2] + 6}px;height:${r[3] + 6}px"></div>` : '';
-    return `<div class="rvs" style="filter:${TONES[tier]}"><div class="rvbg" style="background-image:url('${BG(L.bg)}')"></div>${out.join('')}${glow}</div>`;
+    return `<div class="rvs" style="filter:${TONES[tier]}"><div class="rvbg" style="background-image:url('${BG(L.bg, lang)}')"></div>${out.join('')}${glow}</div>`;
   }
 
   const rv = {
     rvCover: (s, c) => plate('rvCover', s, c, ({ T, R, cats }) => {
       T('title', s.title); T('tagline', s.tagline);
-      const f = LAYOUT.slides.rvCover.f.stars, n = String(s.stars), fs = Math.max(26, Math.min(44, Math.floor(215 / (n.length * 0.62))));
-      R('stars', [[n, CY], [' YILDIZ', '#fff']], fs, s.date);
-      R('forks', [[String(s.forks), '#d58bff'], [' FORK', '#fff']]);
+      const n = String(s.stars), fs = Math.max(26, Math.min(44, Math.floor(215 / (n.length * 0.62))));
+      R('stars', [[n, CY], [` ${tx(s).stars}`, '#fff']], fs, s.date);
+      R('forks', [[String(s.forks), '#d58bff'], [` ${tx(s).fork}`, '#fff']]);
       R('repoHead', [[s.owner || '', CY], [' / ', '#9fb0d0'], [s.repo || '', '#fff']]);
       T('promise', s.promise); cats();
     }),
     rvExplain: (s) => plate('rvExplain', s, null, ({ T, T2 }) => {
-      T('summary', s.summary); T('ctitle', s.cardTitle || 'Ne sunuyor?'); T('desc', s.description);
+      T('summary', s.summary); T('ctitle', s.cardTitle || tx(s).offers); T('desc', s.description);
       arr(s.features).slice(0, 4).forEach((x, i) => T2(`feat${i}`, x.title, x.text));
       if (s.extra) T2('extra', s.extra.title, s.extra.text);
     }),
@@ -139,7 +150,7 @@
       cats();
     }),
     rvUsage: (s) => plate('rvUsage', s, null, ({ T, cats }) => {
-      T('sub', s.intro); T('url', s.link); T('exT', 'Arama örnekleri');
+      T('sub', s.intro); T('url', s.link); T('exT', tx(s).examples); T('araBtn', tx(s).search);
       T('pageTitle', s.pageTitle || s.repo || ''); T('input', s.input || arr(s.examples)[0] || '');
       arr(s.steps).slice(0, 3).forEach((t, i) => T(`st${i}`, stepText(t)));
       arr(s.examples).slice(0, 4).forEach((e, j) => T(`ex${j}`, e));
@@ -150,7 +161,7 @@
       T('sub', s.intro); T('cmd', s.command);
       arr(s.advantages).slice(0, 3).forEach((a, i) => { T(`adv${i}t`, a.title); T(`adv${i}b`, a.text); });
       if (s.alt) { T('altT', s.alt.title); T('altB', s.alt.text); }
-      if (s.note) { T('noteT', s.noteTitle || 'Önemli not'); T('noteB', s.note); }
+      if (s.note) { T('noteT', s.noteTitle || tx(s).noteT); T('noteB', s.note); }
     }),
     rvFinal: (s, c) => plate('rvFinal', s, c, ({ T, R, cats }) => {
       T('sub', s.intro);
@@ -222,19 +233,22 @@
 
   // ai: yapay zekanın Türkçe özeti (opsiyonel). Yoksa README/GitHub verisinden sade bir carousel üretilir.
   // GitHub API'nin repo nesnesinden (+ README'den) hazır carousel postu üretir
-  function postFromRepo(g, id, readme, theme, ai) {
+  function postFromRepo(g, id, readme, theme, ai, opts) {
     ai = ai || {};
+    opts = opts || {};
+    const lang = opts.lang === 'en' ? 'en' : 'tr';
+    const t = I18N[lang];
     const tier = TIERS.findIndex((t) => g.stargazers_count < t.max);
-    const nf = (n) => Number(n || 0).toLocaleString('tr-TR');
-    const date = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+    const nf = (n) => Number(n || 0).toLocaleString(t.locale);
+    const date = new Date().toLocaleDateString(t.locale, { day: 'numeric', month: 'long', year: 'numeric' });
     const tags = ['#github', '#opensource', ...(g.topics || []).slice(0, 5).map((t) => '#' + t.replace(/-/g, ''))].join(' ');
     const desc = clean(g.description);
-    const base = { tier, owner: g.owner && g.owner.login ? g.owner.login : g.full_name.split('/')[0], repo: g.name, categories: ai.categories };
+    const base = { lang, tier, owner: g.owner && g.owner.login ? g.owner.login : g.full_name.split('/')[0], repo: g.name, categories: ai.categories };
     const feats = [
-      { icon: '⚙️', title: g.language ? `${g.language} ile yazıldı` : 'Açık kaynak', text: '' },
-      g.license && g.license.spdx_id && g.license.spdx_id !== 'NOASSERTION' ? { icon: '📜', title: `${g.license.spdx_id} lisanslı`, text: '' } : null,
-      { icon: '🍴', title: `${nf(g.forks_count)} kez fork edildi`, text: '' },
-      g.pushed_at ? { icon: '🕒', title: `Son güncelleme: ${g.pushed_at.slice(0, 10)}`, text: '' } : null,
+      { icon: '⚙️', title: t.written(g.language), text: '' },
+      g.license && g.license.spdx_id && g.license.spdx_id !== 'NOASSERTION' ? { icon: '📜', title: t.licensed(g.license.spdx_id), text: '' } : null,
+      { icon: '🍴', title: t.forked(nf(g.forks_count)), text: '' },
+      g.pushed_at ? { icon: '🕒', title: t.updated(g.pushed_at.slice(0, 10)), text: '' } : null,
     ].filter(Boolean);
     const cmds = installCommands(readme);
     const cover = { type: 'rvCover', ...base, title: g.name, tagline: ai.tagline || desc, stars: nf(g.stargazers_count), date, forks: nf(g.forks_count), promise: ai.promise || desc };
@@ -254,17 +268,17 @@
       : [
         cover,
         { type: 'rvExplain', ...base, summary: desc, description: firstParagraph(readme) || desc || g.name, features: feats },
-        { type: 'rvDownload', ...base, intro: 'Projeyi kendi bilgisayarında denemek istersen.', command: cmds[0] || `git clone ${g.html_url}`, note: cmds[1] ? `Sonra: ${cmds[1]}` : "Detaylar için README'ye bak." },
-        { type: 'rvFinal', ...base, rows: [{ icon: '💻', k: 'Proje:', v: g.name }, { icon: '⭐', k: 'Yıldız:', v: nf(g.stargazers_count) }, { icon: '🍴', k: 'Fork:', v: nf(g.forks_count) }, { icon: '🔗', k: 'Adres:', v: `github.com/${g.full_name}` }] },
+        { type: 'rvDownload', ...base, intro: t.tryIt, command: cmds[0] || `git clone ${g.html_url}`, note: cmds[1] ? `${t.then}${cmds[1]}` : t.readme },
+        { type: 'rvFinal', ...base, rows: [{ icon: '💻', k: 'Proje:', v: g.name }, { icon: '⭐', k: 'Yıldız:', v: nf(g.stargazers_count) }, { icon: '🍴', k: 'Fork:', v: nf(g.forks_count) }, { icon: '🔗', k: `${t.address}:`, v: `github.com/${g.full_name}` }] },
       ];
     return {
-      id, published: false, theme: theme === undefined ? TIERS[tier].theme : theme, source: g.full_name,
-      caption: `${ai.hook || `${g.name} — ${desc || 'harika bir açık kaynak proje'}`} 🚀\n\n${ai.summary || ''}${ai.summary ? '\n\n' : ''}Kaydır ve detayları gör.\n\n${g.html_url}\n\n${tags}`,
+      id, published: false, lang, account: opts.account || (lang === 'en' ? 'en' : 'tr'), theme: theme === undefined ? TIERS[tier].theme : theme, source: g.full_name,
+      caption: `${ai.hook || `${g.name} — ${desc || t.nice}`} 🚀\n\n${ai.summary || ''}${ai.summary ? '\n\n' : ''}${t.swipe}\n\n${g.html_url}\n\n${tags}`,
       slides,
     };
   }
 
-  const api = { esc, builders, fill, installCommands, postFromRepo, THEME_IDS, tierFor, setLayout: (l) => { LAYOUT = l; }, setBg: (fn) => { BG = fn; } };
+  const api = { esc, builders, fill, installCommands, postFromRepo, THEME_IDS, tierFor, setLayout: (l, lang) => { LAYOUTS[lang || 'tr'] = l; }, hasLayout: (lang) => !!LAYOUTS[lang], setBg: (fn) => { BG = fn; } };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Slides = api;
 })(this);

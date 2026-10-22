@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 public static class Eraser {
   // dikdörtgenin sol/sağ komşu piksellerinden her satır için doğrusal geçişle doldurur
-  public static void Fill(Bitmap bmp, int x, int y, int w, int h) {
+  public static void Fill(Bitmap bmp, int x, int y, int w, int h, int mode) {
     int W = bmp.Width, H = bmp.Height;
     int x0 = Math.Max(5, x), x1 = Math.Min(W - 6, x + w), y0 = Math.Max(0, y), y1 = Math.Min(H, y + h);
     var rect = new Rectangle(0, 0, W, H);
@@ -20,7 +20,8 @@ public static class Eraser {
     for (int yy = y0; yy < y1; yy += 2) { int li = yy * stride + (x0 - 2) * 3, ri = yy * stride + (x1 + 2) * 3; for (int c = 0; c < 3; c++) dh += Math.Abs(buf[li + c] - buf[ri + c]); nh++; }
     for (int xx = x0; xx < x1; xx += 2) { int ti = (ya - 2) * stride + xx * 3, bi = (yb + 2) * stride + xx * 3; for (int c = 0; c < 3; c++) dv += Math.Abs(buf[ti + c] - buf[bi + c]); nv++; }
     dh /= Math.Max(1, nh); dv /= Math.Max(1, nv);
-    if (dh <= dv + 6) {
+    bool horiz = mode == 1 ? true : mode == 2 ? false : (dh <= dv + 6);
+    if (horiz) {
       for (int yy = y0; yy < y1; yy++) {
         double lr = 0, lg = 0, lb = 0, rr = 0, rg = 0, rb = 0;
         for (int k = 1; k <= 4; k++) {
@@ -74,7 +75,7 @@ foreach ($p in $layout.slides.PSObject.Properties) {
   $img = [Drawing.Image]::FromFile("$src\$($s.bg).png")
   $bmp = New-Object Drawing.Bitmap $img.Width, $img.Height, ([Drawing.Imaging.PixelFormat]::Format24bppRgb)
   $g = [Drawing.Graphics]::FromImage($bmp); $g.DrawImage($img, 0, 0, $img.Width, $img.Height); $g.Dispose(); $img.Dispose()
-  foreach ($r in $s.erase) { [Eraser]::Fill($bmp, [int]$r[0], [int]$r[1], [int]$r[2], [int]$r[3]) }
+  foreach ($r in $s.erase) { $md = 0; if ($r.Count -gt 4) { $md = [int]$r[4] }; [Eraser]::Fill($bmp, [int]$r[0], [int]$r[1], [int]$r[2], [int]$r[3], $md) }
   $out = "C:\ig-carousel-bot\template\rv\$($s.bg).jpg"
   $bmp.Save($out, $codec, $ep); $bmp.Dispose()
   "{0}: {1} KB" -f $p.Name, [int]((Get-Item $out).Length / 1KB)

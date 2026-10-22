@@ -221,6 +221,7 @@ function bind() {
 
 // ---------------- Otomasyon paneli ----------------
 const ISECRETS = [['ANTHROPIC_API_KEY', 'Türkçe özet (yapay zeka)'], ['IG_USER_ID', 'Instagram hesap kimliği'], ['IG_ACCESS_TOKEN', 'Instagram erişim anahtarı'],
+  ['IG_USER_ID_EN', 'İngilizce hesap: Instagram hesap kimliği'], ['IG_ACCESS_TOKEN_EN', 'İngilizce hesap: erişim anahtarı (yoksa ortak anahtar kullanılır)'],
   ['FB_APP_ID', 'Token yenileme: Meta uygulama kimliği'], ['FB_APP_SECRET', 'Token yenileme: Meta uygulama sırrı'], ['GH_PAT', 'Token yenileme: GitHub erişim anahtarı']];
 let autoT, autoInfo = null, autoFiles = null, autoRun = null;
 const api = (u, body) => fetch(u, body === undefined ? {} : { method: 'POST', body: JSON.stringify(body) }).then((r) => r.json());
@@ -239,11 +240,20 @@ function nextRun(crons) {
 const cronLabel = (c, i) => { const m = c.match(/^(\d+) (\d+) /); if (!m) return c; const t = new Date(Date.UTC(2026, 0, 1, +m[2], +m[1])); return `Her gün ${t.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} · ${i === 0 ? 'popüler proje' : 'yükselen proje'}`; };
 const statusChip = (r) => r.status !== 'completed' ? '<span class="chip run">çalışıyor…</span>' : r.conclusion === 'success' ? '<span class="chip ok">başarılı</span>' : r.conclusion === 'cancelled' ? '<span class="chip">iptal</span>' : '<span class="chip bad">hatalı</span>';
 
+const ACC_DEFAULT = { tr: { id: 'tr', lang: 'tr', enabled: true, brand: { name: 'Repo Rehberi', handle: '@reporehberi' } }, en: { id: 'en', lang: 'en', enabled: false, brand: { name: 'Repo Guide', handle: '@repoguide' } } };
+function accOf(id) {
+  data.accounts ||= [];
+  let a = data.accounts.find((x) => x.id === id);
+  if (!a) { a = JSON.parse(JSON.stringify(ACC_DEFAULT[id])); data.accounts.push(a); }
+  a.brand ||= { ...ACC_DEFAULT[id].brand };
+  return a;
+}
 function renderAuto() {
   const v = $('autoView'), a = autoInfo; if (!a) { v.innerHTML = '<div class="card">Yükleniyor…</div>'; return; }
   const nx = nextRun(a.crons), on = a.workflow === 'active';
   const set = data.settings || {};
   const val = (k, d) => (data[k] ?? d);
+  const acc = (id) => accOf(id);
   v.innerHTML = `<div class="agrid">
   <div class="card"><h3>Durum</h3>
     <div class="sec"><span>GitHub bağlantısı</span><b>${a.gh.ok ? `<span class="dot on"></span>${Slides.esc(a.gh.user)}` : '<span class="dot off"></span>Bağlı değil'}</b></div>
@@ -272,8 +282,12 @@ function renderAuto() {
     <label>Yükselen: son kaç gün<input id="sRDays" type="number" value="${val('risingDays', 60)}"></label>
     <label>Konular (virgülle, boşsa hepsi)<input id="sTopics" value="${Slides.esc((val('topics', []) || []).join(', '))}"></label>
     <label class="full">Kendi seçtiklerim (sahip/repo, her satır bir tane; bot önce bunları paylaşır)<textarea id="sRepos" rows="3">${Slides.esc((val('repos', []) || []).join('\n'))}</textarea></label>
-    <label>Sayfa adı<input id="sBrand" value="${Slides.esc((data.brand || {}).name || 'Repo Rehberi')}"></label>
-    <label>Kullanıcı adı<input id="sHandle" value="${Slides.esc((data.brand || {}).handle || '@reporehberi')}"></label>
+    <label>Türkçe sayfa adı<input id="sBrand" value="${Slides.esc(acc('tr').brand.name)}"></label>
+    <label>Türkçe kullanıcı adı<input id="sHandle" value="${Slides.esc(acc('tr').brand.handle)}"></label>
+    <label class="full chk"><input type="checkbox" id="sEn" ${acc('en').enabled ? 'checked' : ''}> İngilizce hesap da etkin (her proje için İngilizce post üret ve paylaş)</label>
+    <label>İngilizce sayfa adı<input id="sBrandEn" value="${Slides.esc(acc('en').brand.name)}"></label>
+    <label>İngilizce kullanıcı adı<input id="sHandleEn" value="${Slides.esc(acc('en').brand.handle)}"></label>
+    <div class="note full ${a.plates && a.plates.en ? '' : 'warn'}">${a.plates && a.plates.en ? 'İngilizce şablon resimleri hazır.' : 'İngilizce şablon resimleri (template/rv/en) henüz yok: bot İngilizce postu şimdilik atlar.'}</div>
   </div>
   <div class="row2" style="margin-top:12px"><button data-act="push" class="primary">💾 Kaydet ve GitHub'a gönder</button><button data-act="pull">GitHub'dan al</button></div>
   <div class="note">${a.git.dirty.length ? `<span class="warn">${a.git.dirty.length} yerel değişiklik GitHub'a gönderilmedi.</span>` : 'Yerel dosyalar GitHub ile aynı.'} ${a.git.behind ? `<span class="warn">GitHub'da ${a.git.behind} yeni commit var (bot yayınlamış olabilir): "GitHub'dan al".</span>` : ''}<br>Ayarlar ancak GitHub'a gönderilince bot tarafından kullanılır.</div>
@@ -297,8 +311,9 @@ function readSettings() {
   data.minStars = n('sMin', 10000); data.minQueue = n('sQueue', 1); data.risingMinStars = n('sRMin', 50); data.risingMaxStars = n('sRMax', 2000); data.risingDays = n('sRDays', 60);
   data.topics = $('sTopics').value.split(',').map((t) => t.trim()).filter(Boolean);
   data.repos = $('sRepos').value.split('\n').map((t) => t.trim()).filter(Boolean);
-  (data.brand ||= {}).name = $('sBrand').value.trim() || 'Repo Rehberi'; data.brand.handle = $('sHandle').value.trim() || '@reporehberi';
-  $('brandName').value = data.brand.name; $('brandHandle').value = data.brand.handle;
+  const tr = accOf('tr'), en = accOf('en');
+  tr.brand.name = $('sBrand').value.trim() || 'Repo Rehberi'; tr.brand.handle = $('sHandle').value.trim() || '@reporehberi';
+  en.enabled = $('sEn').checked; en.brand.name = $('sBrandEn').value.trim() || 'Repo Guide'; en.brand.handle = $('sHandleEn').value.trim() || '@repoguide';
 }
 
 document.addEventListener('click', async (e) => {

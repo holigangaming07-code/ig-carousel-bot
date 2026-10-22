@@ -32,11 +32,11 @@ S['rvExplain'] = dict(bg=2, legend=[[68, 1121, 112, 97], [188, 1121, 112, 97], [
     'summary': F(82, 306, 640, 56, 40, WH, 500, mn=24),
     'ctitle': F(252, 402, 790, 46, 36, CY, 800, mn=24),
     'desc': F(252, 452, 790, 86, 28, '#c9d6f2', 500, lh=1.22, mn=18),
-    'feat0': F(214, 604, 246, 116, 30, CY, 800, mn=16, c2=MU),
-    'feat1': F(731, 604, 246, 116, 30, PK, 800, mn=16, c2=MU),
-    'feat2': F(214, 766, 246, 116, 30, GR, 800, mn=16, c2=MU),
-    'feat3': F(731, 766, 246, 116, 30, PK, 800, mn=16, c2=MU),
-    'extra': F(219, 934, 765, 92, 34, GD, 800, mn=20, c2=MU)})
+    'feat0': F(214, 604, 246, 116, 30, CY, 800, mn=16, c2=MU, px=0, py=8),
+    'feat1': F(731, 604, 246, 116, 30, PK, 800, mn=16, c2=MU, px=0, py=8),
+    'feat2': F(214, 766, 246, 116, 30, GR, 800, mn=16, c2=MU, px=0, py=8),
+    'feat3': F(731, 766, 246, 116, 30, PK, 800, mn=16, c2=MU, px=0, py=8),
+    'extra': F(219, 934, 765, 92, 34, GD, 800, mn=20, c2=MU, px=0, py=6)})
 
 # 3 kimler için uygun
 a3 = {}
@@ -57,9 +57,9 @@ S['rvSetup'] = dict(bg=4, legend=legend_panel([619, 682, 744, 806, 869]), f={
     'st0': F(100, 395, 270, 54, 24, CY, 700, 'center', 1.1, mn=14),
     'st1': F(446, 395, 270, 54, 24, PK, 700, 'center', 1.1, mn=14),
     'st2': F(787, 395, 270, 54, 24, TE, 700, 'center', 1.1, mn=14),
-    'n0': F(942, 584, 152, 34, 19, WH, 600, 'center', mn=11),
-    'n1': F(328, 862, 142, 34, 19, WH, 600, 'center', mn=11),
-    'n2': F(960, 863, 135, 34, 19, WH, 600, 'center', mn=11),
+    'n0': F(942, 584, 152, 34, 19, WH, 600, 'center', mn=11, px=1, py=8),
+    'n1': F(328, 862, 142, 34, 19, WH, 600, 'center', mn=11, px=1, py=8),
+    'n2': F(960, 863, 135, 34, 19, WH, 600, 'center', mn=11, px=1, py=8),
     'bottom': F(243, 1276, 650, 60, 40, '#e9f7ff', 800, lh=1.05, mn=22),
     **books([218, 226, 233, 236, 236], [993, 1050, 1104, 1158, 1211], 128)})
 
@@ -67,10 +67,10 @@ S['rvSetup'] = dict(bg=4, legend=legend_panel([619, 682, 744, 806, 869]), f={
 s5 = {}
 for i, (x, c) in enumerate([(168, BL), (531, PK), (884, GD)]):
     s5[f's{i}h'] = F(x, 360, 208, 82, 28, c, 800, mn=15, c2=MU)
-cols5 = [(126, 218, [479, 522, 566, 609]), (493, 205, [480, 524, 567, 611]), (850, 195, [482, 526, 570, 614])]
+cols5 = [(126, 206, [479, 522, 566, 609]), (493, 198, [480, 524, 567, 611]), (850, 188, [482, 526, 570, 614])]
 for i, (x, w, ys) in enumerate(cols5):
     for j, c in enumerate(ys):
-        s5[f's{i}i{j}'] = F(x, c - 13, w, 26, 21, WH, 500, mn=12)
+        s5[f's{i}i{j}'] = F(x, c - 13, w, 26, 21, WH, 500, mn=12, py=6, px=3, mode=1)
 S['rvSections'] = dict(bg=5, legend=legend_panel([760, 816, 870, 924, 978], 48, 202, 50), f={
     'sub': F(82, 280, 745, 52, 40, WH, 500, mn=24),
     'note': F(905, 770, 176, 200, 25, '#ffe28a', 700, lh=1.2, mn=14, rot=-8, erase=[897, 757, 196, 232]),
@@ -82,19 +82,20 @@ s6 = {}
 for i, c in enumerate([CY, PK, HP]):
     s6[f'st{i}'] = F([196, 544, 879][i], 293, [178, 178, 186][i], 84, 22, c, 700, lh=1.1, mn=13)
 for j, c in enumerate([948, 989, 1029, 1069]):
-    s6[f'ex{j}'] = F(94, c - 13, 155, 26, 20, WH, 500, mn=12)
+    s6[f'ex{j}'] = F(94, c - 13, 155, 26, 20, WH, 500, mn=12, py=5, px=2, mode=1)
 tcols = ['#4fb8ff', PK, GR, HP]
 for r, (ty, dy, py) in enumerate([(766, 791, 812), (854, 878, 902), (941, 966, 992), (1029, 1054, 1082)]):
-    s6[f'res{r}t'] = F(420, ty, 245, 24, 22, tcols[r], 700, mn=13)
-    s6[f'res{r}d'] = F(420, dy, 245, 20, 17, MU, 500, mn=11)
+    s6[f'res{r}t'] = F(420, ty, 245, 24, 22, tcols[r], 700, mn=13, py=3)
+    s6[f'res{r}d'] = F(420, dy, 245, 20, 17, MU, 500, mn=11, py=3)
     for k, px in enumerate([733, 827, 919]):
-        s6[f'res{r}g{k}'] = F(px, py - 9, 62, 18, 14, tcols[r], 600, 'center', mn=9)
+        s6[f'res{r}g{k}'] = F(px, py - 9, 62, 18, 14, tcols[r], 600, 'center', mn=9, px=0, py=5)
 S['rvUsage'] = dict(bg=6, legend=legend_panel([609, 663, 719, 774, 831], 46, 212, 52), f={
     'sub': F(82, 218, 712, 52, 40, WH, 500, mn=24),
     'url': F(335, 428, 522, 42, 30, WH, 800, 'center', mn=16),
     'exT': F(84, 888, 175, 30, 21, WH, 700, mn=14),
     'pageTitle': F(332, 598, 322, 30, 21, WH, 700, mn=13),
     'input': F(394, 648, 312, 30, 21, MU, 500, mn=13),
+    'araBtn': F(944, 644, 102, 32, 22, WH, 800, 'center', mn=12, px=0, py=4),
     **s6, **books([220, 228, 236, 238, 240], [1135, 1188, 1238, 1288, 1335], 118)})
 
 # 7 indirme
@@ -109,7 +110,7 @@ S['rvDownload'] = dict(bg=7, legend=legend_panel([440, 503, 566, 628, 691], 46, 
 # 8 kapanış
 S['rvFinal'] = dict(bg=8, legend=legend_panel([810, 866, 922, 979, 1036], 868, 212, 50), f={
     'sub': F(75, 230, 435, 52, 40, WH, 500, mn=22),
-    **{f'val{i}': F(310, c - 21, 318, 42, 30, WH, 600, mn=14) for i, c in enumerate([352, 421, 491, 561, 631])},
+    **{f'val{i}': F(310, c - 21, 318, 42, 30, WH, 600, mn=14, px=0, py=8) for i, c in enumerate([352, 421, 491, 561, 631])},
     'repoHead': F(230, 808, 330, 32, 20, WH, 700, mn=13),
     **books([188, 192, 197, 198, 198], [967, 1016, 1064, 1111, 1160], 110, -6, 20)})
 
@@ -117,7 +118,11 @@ S['rvFinal'] = dict(bg=8, legend=legend_panel([810, 866, 922, 979, 1036], 868, 2
 for k, s in S.items():
     er = []
     for name, f in s['f'].items():
-        er.append(f.pop('erase', None) or [f['x'], f['y'], f['w'], f['h']])
+        e = f.pop('erase', None)
+        px, py = f.pop('px', 5), f.pop('py', 10)
+        md = f.pop('mode', 0)
+        e = e or [f['x'] - px, f['y'] - py, f['w'] + 2 * px, f['h'] + 2 * py]
+        er.append(e + [md] if md else e)
     s['erase'] = er
 json.dump({'w': 1122, 'h': 1402, 'slides': S}, open(r'C:\ig-carousel-bot\template\rv\layout.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print('ok', sum(len(s['erase']) for s in S.values()), 'rect')

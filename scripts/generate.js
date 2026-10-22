@@ -1,6 +1,8 @@
 // Kuyrukta yayınlanmamış post kalmadıysa GitHub'dan yeni bir proje seçip otomatik post üretir.
 // Kaynak sırası: 1) posts.json "repos" listesi  2) GitHub aramasından popüler/güncel projeler.
-const { loadPosts, savePosts, fail } = require('./common');
+const fs = require('fs');
+const path = require('path');
+const { ROOT, loadPosts, savePosts, fail } = require('./common');
 const { postFromRepo } = require('./slides');
 
 const token = process.env.GITHUB_TOKEN;
@@ -36,9 +38,15 @@ async function llm(prompt) {
   return (await r.json()).choices[0].message.content;
 }
 
-async function aiSummary(g, readme) {
-  const prompt = `Aşağıdaki GitHub projesini 8 slaytlık bir Instagram carousel için sade, akıcı, samimi TÜRKÇE ile anlat. SADECE geçerli JSON döndür, başka metin yazma.
-Slayt başlıkları sabittir: 2 "Bu repo ne işe yarıyor?", 3 "Kimler için uygun?", 4 "Kurulum gerekiyor mu?", 5 "Özel bölümler nasıl bulunur?", 6 "Arama nasıl yapılır?", 7 "İstersen bilgisayarına da indirebilirsin". İçeriği bu başlıklara uyacak şekilde yaz (proje uygulama ise 5. slaytta ana bölümlerini, 6. slaytta dokümantasyon/komutlara nasıl ulaşılacağını anlat).
+const TITLES = {
+  tr: '2 "Bu repo ne işe yarıyor?", 3 "Kimler için uygun?", 4 "Kurulum gerekiyor mu?", 5 "Özel bölümler nasıl bulunur?", 6 "Arama nasıl yapılır?", 7 "İstersen bilgisayarına da indirebilirsin"',
+  en: '2 "What does this repo do?", 3 "Who is it for?", 4 "Do you need to install it?", 5 "How to find the key sections?", 6 "How to search?", 7 "You can download it too"',
+};
+
+async function aiSummary(g, readme, lang = 'tr') {
+  const en = lang === 'en';
+  const prompt = `Aşağıdaki GitHub projesini 8 slaytlık bir Instagram carousel için ${en ? 'simple, fluent, friendly ENGLISH ile anlat (TÜM değerler İngilizce olmalı, tek kelime Türkçe yazma)' : 'sade, akıcı, samimi TÜRKÇE ile anlat'}. SADECE geçerli JSON döndür, başka metin yazma.
+Slayt başlıkları sabittir: ${TITLES[lang] || TITLES.tr}. İçeriği bu başlıklara uyacak şekilde yaz (proje uygulama ise 5. slaytta ana bölümlerini, 6. slaytta dokümantasyon/komutlara nasıl ulaşılacağını anlat).
 Kurallar: her metin kısa olsun (belirtilen karakter sınırını AŞMA). "icon" alanları TEK emoji olsun. Adım metinlerinin başına numara veya 1️⃣ gibi emoji koyma. Bilmediğin şeyi uydurma; README'de olmayan komut/adres yazma. Proje bir uygulama değil de liste/doküman ise kurulum ve indirme kısımlarını buna göre dürüstçe yaz.
 JSON şeması:
 {
@@ -93,7 +101,7 @@ ${readme.slice(0, 7000)}`;
     if (!j.summary || !Array.isArray(j.features) || !j.features.length) throw new Error('eksik alan');
     return j;
   } catch (e) {
-    console.warn(`Yapay zeka özeti alınamadı (${e.message}), README özeti kullanılacak.`);
+    console.warn(`Yapay zeka özeti alınamadı (${lang}: ${e.message}), README özeti kullanılacak.`);
     return null;
   }
 }
@@ -117,11 +125,20 @@ async function findRepo(data, used) {
   return pick(fresh);
 }
 
+const hasPlates = (lang) => fs.existsSync(path.join(ROOT, 'template', 'rv', lang, 'layout.json'));
+
 (async () => {
   const data = loadPosts();
-  const pending = data.posts.filter((p) => !p.published && !p.draft).length;
-  if (pending >= (data.minQueue || 1) && !process.env.FORCE) {
-    console.log(`Kuyrukta ${pending} yayınlanmamış post var, yeni üretilmedi.`);
+  const all = data.accounts && data.accounts.length ? data.accounts : [{ id: 'tr', lang: 'tr' }];
+  const accounts = all.filter((a) => a.enabled !== false).filter((a) => {
+    if (a.lang === 'tr' || hasPlates(a.lang)) return true;
+    console.warn(`"${a.id}" hesabı atlandı: template/rv/${a.lang}/ şablonu yok.`);
+    return false;
+  });
+  if (!accounts.length) { console.log('Etkin hesap yok.'); return; }
+  const pending = new Set(data.posts.filter((p) => !p.published && !p.draft).map((p) => p.source || p.id));
+  if (pending.size >= (data.minQueue || 1) && !process.env.FORCE) {
+    console.log(`Kuyrukta ${pending.size} yayınlanmamış proje var, yeni üretilmedi.`);
     return;
   }
   const used = new Set(data.posts.map((p) => (p.source || '').toLowerCase()).filter(Boolean));
@@ -130,10 +147,14 @@ async function findRepo(data, used) {
   let readme = '';
   try { readme = await gh(`/repos/${g.full_name}/readme`, 'application/vnd.github.raw+json'); } catch (_) { /* README yoksa klon adımına düşer */ }
 
-  let id = g.name.toLowerCase().replace(/[^\w.-]/g, '-');
-  for (let n = 2; data.posts.some((p) => p.id === id); n++) id = `${g.name.toLowerCase()}-${n}`;
-  const post = postFromRepo(g, id, readme, undefined, await aiSummary(g, readme));
-  data.posts.push(post);
+  const slug = g.name.toLowerCase().replace(/[^\w.-]/g, '-');
+  let baseId = slug;
+  for (let n = 2; data.posts.some((p) => p.id === baseId || p.id.startsWith(`${baseId}-`)); n++) baseId = `${slug}-${n}`;
+  for (const acc of accounts) {
+    const id = acc.lang === 'tr' ? baseId : `${baseId}-${acc.lang}`;
+    const post = postFromRepo(g, id, readme, undefined, await aiSummary(g, readme, acc.lang), { lang: acc.lang, account: acc.id });
+    data.posts.push(post);
+    console.log(`✔ Yeni post üretildi: ${post.id} (${g.full_name}, ${acc.id}, ${post.slides.length} slayt)`);
+  }
   savePosts(data);
-  console.log(`✔ Yeni post üretildi: ${post.id} (${g.full_name}, ${post.slides.length} slayt)`);
 })().catch((e) => fail(e.message));

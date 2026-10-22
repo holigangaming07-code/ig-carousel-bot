@@ -204,7 +204,7 @@ def auto_status():
     with ThreadPoolExecutor(max_workers=5) as ex:
         futs = {k: ex.submit(fn) for k, fn in jobs.items()}
         res = {k: f.result() for k, f in futs.items()}
-    out = {"repo": repo, "crons": read_crons()}
+    out = {"repo": repo, "crons": read_crons(), "plates": {"en": os.path.exists(os.path.join(ROOT, "template", "rv", "en", "layout.json"))}}
     rc, txt = res["auth"]
     m = re.search(r"account (\S+)", txt)
     out["gh"] = {"ok": rc == 0, "user": m.group(1) if m else "", "msg": "" if rc == 0 else txt.strip()[:200]}
