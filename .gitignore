@@ -1,3 +1,4 @@
 node_modules/
 .env
 content/posts.json.bak
+__pycache__/
