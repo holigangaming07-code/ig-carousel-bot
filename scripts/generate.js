@@ -22,7 +22,8 @@ async function findRepo(data, used) {
   const q = encodeURIComponent(`${topic}stars:>${data.minStars || 10000} pushed:>${since} archived:false`);
   const { items } = await gh(`/search/repositories?q=${q}&sort=stars&order=desc&per_page=100`);
   // paylaşılmamış, açıklamalı ve lisanslı projeler arasından en yüksek yıldızlı 15 tanesinden biri
-  const fresh = (items || []).filter((g) => g.description && g.license && !used.has(g.full_name.toLowerCase())).slice(0, 15);  if (!fresh.length) throw new Error('Uygun yeni proje bulunamadı (minStars değerini düşür).');
+  const fresh = (items || []).filter((g) => g.description && g.license && !used.has(g.full_name.toLowerCase())).slice(0, 15);
+  if (!fresh.length) throw new Error('Uygun yeni proje bulunamadı (minStars değerini düşür).');
   return pick(fresh);
 }
 
