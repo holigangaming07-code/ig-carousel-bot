@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carousel Studio</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="logo">▦</span> Carousel Studio</div>
+  <div class="spacer"></div>
+  <span id="status" class="status">Hazır</span>
+  <button id="btnExport" class="primary">⬇ JPG olarak dışa aktar</button>
+  <button id="btnZip">ZIP indir</button>
+  <button id="btnFolder">Klasörü aç</button>
+</header>
+<main>
+  <aside id="left">
+    <div class="sec-title">Postlar</div>
+    <div id="postList"></div>
+    <button id="btnNewPost" class="wide">＋ Yeni post</button>
+    <div class="gh">
+      <div class="sec-title">GitHub'dan otomatik</div>
+      <input id="ghRepo" placeholder="sahip/repo  (ör. vercel/next.js)">
+      <button id="btnGh" class="wide">✨ Carousel üret</button>
+    </div>
+    <label class="repo">Repo (yayın için)
+      <input id="cfgRepo"> </label>
+    <label class="repo">Branch <input id="cfgBranch"></label>
+  </aside>
+  <section id="center">
+    <div id="stage"><div id="stageInner"><iframe id="preview" title="önizleme"></iframe></div></div>
+    <div class="nav">
+      <button id="btnPrev">◀</button>
+      <span id="navInfo"></span>
+      <button id="btnNext">▶</button>
+    </div>
+    <div id="film"></div>
+  </section>
+  <aside id="right">
+    <div class="sec-title">Post</div>
+    <label>Kimlik <input id="postId"></label>
+    <label>Tema
+      <div id="themes" class="themes"></div>
+    </label>
+    <label class="chk"><input type="checkbox" id="postPub"> Yayınlandı olarak işaretle</label>
+    <label>Açıklama (caption) <span id="capCount" class="count"></span>
+      <textarea id="postCaption" rows="6"></textarea></label>
+    <div class="sec-title">Slayt <span id="slideNo"></span></div>
+    <div id="fields"></div>
+    <div class="row">
+      <button id="btnDup">Kopyala</button>
+      <button id="btnLeft">←</button>
+      <button id="btnRight">→</button>
+      <button id="btnDel" class="danger">Sil</button>
+    </div>
+    <div class="row">
+      <select id="addType"></select>
+      <button id="btnAdd" class="primary">＋ Slayt ekle</button>
+    </div>
+  </aside>
+</main>
+<div id="toast"></div>
+<script src="/slides.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

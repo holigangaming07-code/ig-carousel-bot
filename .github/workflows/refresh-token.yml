@@ -1,0 +1,36 @@
+name: Instagram Token Yenile
+
+on:
+  schedule:
+    # Her ayın 1'i ve 15'i (token 60 günde dolar)
+    - cron: "0 6 1,15 * *"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Token'ı yenile ve secret'ı güncelle
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          FB_APP_ID: ${{ secrets.FB_APP_ID }}
+          FB_APP_SECRET: ${{ secrets.FB_APP_SECRET }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          for v in IG_ACCESS_TOKEN FB_APP_ID FB_APP_SECRET GH_TOKEN; do
+            if [ -z "${!v}" ]; then echo "HATA: $v secret'ı tanımlı değil"; exit 1; fi
+          done
+          RES=$(curl -sS -G "https://graph.facebook.com/v21.0/oauth/access_token" \
+            --data-urlencode "grant_type=fb_exchange_token" \
+            --data-urlencode "client_id=$FB_APP_ID" \
+            --data-urlencode "client_secret=$FB_APP_SECRET" \
+            --data-urlencode "fb_exchange_token=$IG_ACCESS_TOKEN")
+          NEW=$(echo "$RES" | jq -r '.access_token // empty')
+          if [ -z "$NEW" ]; then
+            echo "HATA: Token yenilenemedi: $(echo "$RES" | jq -r '.error.message // .')"
+            exit 1
+          fi
+          echo "::add-mask::$NEW"
+          gh secret set IG_ACCESS_TOKEN --repo "$GITHUB_REPOSITORY" --body "$NEW"
+          echo "Token yenilendi."

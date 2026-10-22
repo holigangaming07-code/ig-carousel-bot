@@ -1,0 +1,85 @@
+name: Instagram Carousel Paylaş
+
+on:
+  schedule:
+    # Pazartesi, Çarşamba, Cuma 09:00 UTC (Türkiye saatiyle 12:00)
+    - cron: "0 9 * * 1,3,5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Sadece render et, yayınlama"
+        type: boolean
+        default: false
+      post_id:
+        description: "Belirli bir post id (boşsa sıradaki yayınlanmamış post)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ig-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ inputs.dry_run == true && 'true' || 'false' }}
+      POST_ID: ${{ inputs.post_id }}
+      BRANCH: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install --no-audit --no-fund
+
+      - name: Playwright Chromium kur
+        run: npx playwright install --with-deps chromium
+
+      - name: Render
+        run: node scripts/render.js
+
+      - name: Görselleri commit et ve push et
+        if: env.DRY_RUN != 'true'
+        run: |
+          git config user.name "ig-bot"
+          git config user.email "ig-bot@users.noreply.github.com"
+          git add output
+          if git diff --cached --quiet; then
+            echo "Commit edilecek yeni görsel yok."
+          else
+            git commit -m "bot: görselleri ekle"
+            git pull --rebase
+            git push
+          fi
+
+      - name: Dry run çıktılarını yükle
+        if: env.DRY_RUN == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-output
+          path: output/
+
+      - name: Yayınla (URL erişimi doğrulanır)
+        if: env.DRY_RUN != 'true'
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: node scripts/publish.js
+
+      - name: posts.json'u commit et
+        if: env.DRY_RUN != 'true'
+        run: |
+          git add content/posts.json
+          if git diff --cached --quiet; then
+            echo "posts.json değişmedi."
+          else
+            git commit -m "bot: post yayınlandı olarak işaretlendi"
+            git pull --rebase
+            git push
+          fi

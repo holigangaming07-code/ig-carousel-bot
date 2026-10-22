@@ -1,0 +1,79 @@
+{
+  "repo": "kullanici/proje",
+  "branch": "main",
+  "posts": [
+    {
+      "id": "01-kurulum",
+      "published": false,
+      "caption": "Kurulum 3 adımda 🚀\n\nKaydır ve adımları takip et.\n\n#github #opensource #dev #yazilim",
+      "slides": [
+        {
+          "type": "cover",
+          "title": "Proje Adı",
+          "subtitle": "Tek cümlelik açıklama buraya"
+        },
+        {
+          "type": "step",
+          "number": 1,
+          "title": "Klonla",
+          "code": "git clone https://github.com/kullanici/proje"
+        },
+        {
+          "type": "step",
+          "number": 2,
+          "title": "Kur",
+          "code": "cd proje\nnpm install"
+        },
+        {
+          "type": "step",
+          "number": 3,
+          "title": "Çalıştır",
+          "code": "npm start"
+        },
+        {
+          "type": "tip",
+          "title": "İpucu",
+          "text": "Sorun yaşarsan Node.js 18 veya üstünü kullandığından emin ol."
+        },
+        {
+          "type": "cta",
+          "title": "Yıldız ver ⭐",
+          "text": "github.com/kullanici/proje"
+        }
+      ]
+    },
+    {
+      "id": "02-ozellikler",
+      "published": false,
+      "caption": "Neler yapabiliyor? 👇\n\n#github #opensource #dev",
+      "slides": [
+        {
+          "type": "cover",
+          "title": "Proje Adı",
+          "subtitle": "Öne çıkan özellikler"
+        },
+        {
+          "type": "list",
+          "title": "Özellikler",
+          "items": [
+            "Hızlı kurulum",
+            "Tek komutla çalışır",
+            "Ücretsiz ve açık kaynak",
+            "Katkıya açık"
+          ]
+        },
+        {
+          "type": "code",
+          "title": "Örnek kullanım",
+          "code": "proje init\nproje run --fast",
+          "text": "Bu kadar basit."
+        },
+        {
+          "type": "cta",
+          "title": "Dene ve geri bildirim ver",
+          "text": "github.com/kullanici/proje"
+        }
+      ]
+    }
+  ]
+}
