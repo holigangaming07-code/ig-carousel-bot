@@ -19,10 +19,12 @@ async function llm(prompt) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: process.env.AI_MODEL || 'claude-haiku-5-5', max_tokens: 900, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model: process.env.AI_MODEL || 'claude-haiku-5-5', max_tokens: 1200, thinking: { type: 'disabled' }, messages: [{ role: 'user', content: prompt }] }),
     });
-    if (!r.ok) throw new Error(`Anthropic ${r.status}`);
-    return (await r.json()).content[0].text;
+    if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text()).slice(0, 200)}`);
+    const block = (await r.json()).content.find((b) => b.type === 'text');
+    if (!block) throw new Error('metin bloğu yok');
+    return block.text;
   }
   if (!token) return null;
   const r = await fetch('https://models.github.ai/inference/chat/completions', {
@@ -44,7 +46,7 @@ README:
 ${readme.slice(0, 6000)}`;
   try {
     const text = await llm(prompt);
-    if (!text) return null;
+    if (!text) throw new Error('yapay zeka anahtarı/servisi yok veya boş yanıt');
     console.log(`Yapay zeka yanıtı: ${text.slice(0, 200).replace(/\s+/g, ' ')}`);
     const j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
     if (!j.explain || !Array.isArray(j.features)) throw new Error('eksik alan');
