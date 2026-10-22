@@ -215,8 +215,7 @@ function bind() {
   Slides.setBg((n) => bg[n]);
   $('brandName').value = (data.brand || {}).name || 'Repo Rehberi'; $('brandHandle').value = (data.brand || {}).handle || '@reporehberi';
   $('cfgRepo').value = data.repo || ''; $('cfgBranch').value = data.branch || '';
-  bind(); refresh(); status('Hazır');
-  if (location.hash === '#auto') openAuto();
+  bind(); status('Hazır'); openAuto();
   setInterval(() => fetch('/api/ping').catch(() => {}), 4000); fetch('/api/ping');
 })();
 
@@ -291,8 +290,7 @@ async function refreshAuto(quiet) {
   try { autoInfo = await api('/api/auto/status'); } catch (e) { if (!quiet) toast('Durum alınamadı'); return; }
   if (!$('autoView').hidden && !document.activeElement.closest('#autoView input, #autoView textarea')) renderAuto();
 }
-function openAuto() { $('autoView').hidden = false; $('btnAuto').textContent = '← Düzenleyici'; renderAuto(); refreshAuto(); clearInterval(autoT); autoT = setInterval(() => refreshAuto(true), 8000); }
-function closeAuto() { $('autoView').hidden = true; $('btnAuto').textContent = '⚙ Otomasyon'; clearInterval(autoT); }
+function openAuto() { $('autoView').hidden = false; renderAuto(); refreshAuto(); clearInterval(autoT); autoT = setInterval(() => refreshAuto(true), 8000); }
 
 function readSettings() {
   const n = (id, d) => { const x = parseInt($(id).value, 10); return Number.isFinite(x) ? x : d; };
@@ -304,7 +302,6 @@ function readSettings() {
 }
 
 document.addEventListener('click', async (e) => {
-  if (e.target.id === 'btnAuto') return $('autoView').hidden ? openAuto() : closeAuto();
   const b = e.target.closest('[data-act]'); if (!b || !$('autoView').contains(b)) return;
   const act = b.dataset.act, id = b.dataset.id;
   const busy = async (fn) => { b.disabled = true; try { await fn(); } finally { b.disabled = false; } };
@@ -321,7 +318,7 @@ document.addEventListener('click', async (e) => {
     setTimeout(refreshAuto, 4000);
   });
   if (act === 'dl') return busy(async () => { toast('İndiriliyor…'); const r = await api('/api/auto/download', { id }); if (!r.ok) return toast('Hata: ' + r.msg); autoRun = id; autoFiles = r.files; renderAuto(); });
-  if (act === 'pull') return busy(async () => { toast('Alınıyor…'); const r = await api('/api/auto/pull', {}); toast(r.ok ? 'GitHub ile eşitlendi' : 'Hata: ' + r.msg); if (r.ok) { data = await api('/api/posts'); refresh(); } await refreshAuto(); renderAuto(); });
+  if (act === 'pull') return busy(async () => { toast('Alınıyor…'); const r = await api('/api/auto/pull', {}); toast(r.ok ? 'GitHub ile eşitlendi' : 'Hata: ' + r.msg); if (r.ok) data = await api('/api/posts'); await refreshAuto(); renderAuto(); });
   if (act === 'push') return busy(async () => {
     readSettings(); await fetch('/api/posts', { method: 'POST', body: JSON.stringify(data) });
     toast('Gönderiliyor…'); const r = await api('/api/auto/push', {}); toast(r.ok ? 'GitHub\'a gönderildi' : 'Hata: ' + r.msg); await refreshAuto(); renderAuto();

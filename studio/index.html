@@ -3,20 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Carousel Studio</title>
+<title>Repo Rehberi Otomasyon</title>
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
 <header>
-  <div class="brand"><span class="logo">▦</span> Carousel Studio</div>
+  <div class="brand"><span class="logo">▦</span> Repo Rehberi · Otomasyon</div>
   <div class="spacer"></div>
   <span id="status" class="status">Hazır</span>
-  <button id="btnAuto">⚙ Otomasyon</button>
-  <button id="btnExport" class="primary">⬇ JPG olarak dışa aktar</button>
-  <button id="btnZip">ZIP indir</button>
-  <button id="btnFolder">Klasörü aç</button>
+  <button id="btnExport" class="primary" hidden>⬇ JPG olarak dışa aktar</button>
+  <button id="btnZip" hidden>ZIP indir</button>
+  <button id="btnFolder" hidden>Klasörü aç</button>
 </header>
-<main>
+<main hidden>
   <aside id="left">
     <div class="sec-title">Postlar</div>
     <div id="postList"></div>
