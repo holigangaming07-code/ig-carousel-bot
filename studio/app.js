@@ -216,5 +216,114 @@ function bind() {
   $('brandName').value = (data.brand || {}).name || 'Repo Rehberi'; $('brandHandle').value = (data.brand || {}).handle || '@reporehberi';
   $('cfgRepo').value = data.repo || ''; $('cfgBranch').value = data.branch || '';
   bind(); refresh(); status('Hazır');
+  if (location.hash === '#auto') openAuto();
   setInterval(() => fetch('/api/ping').catch(() => {}), 4000); fetch('/api/ping');
 })();
+
+// ---------------- Otomasyon paneli ----------------
+const ISECRETS = [['ANTHROPIC_API_KEY', 'Türkçe özet (yapay zeka)'], ['IG_USER_ID', 'Instagram hesap kimliği'], ['IG_ACCESS_TOKEN', 'Instagram erişim anahtarı'],
+  ['FB_APP_ID', 'Token yenileme: Meta uygulama kimliği'], ['FB_APP_SECRET', 'Token yenileme: Meta uygulama sırrı'], ['GH_PAT', 'Token yenileme: GitHub erişim anahtarı']];
+let autoT, autoInfo = null, autoFiles = null, autoRun = null;
+const api = (u, body) => fetch(u, body === undefined ? {} : { method: 'POST', body: JSON.stringify(body) }).then((r) => r.json());
+const fmt = (d) => new Date(d).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+function nextRun(crons) {
+  const now = new Date(); let best = null;
+  crons.forEach((c, i) => {
+    const m = c.match(/^(\d+) (\d+) \* \* \*$/); if (!m) return;
+    const t = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), +m[2], +m[1]));
+    if (t <= now) t.setUTCDate(t.getUTCDate() + 1);
+    if (!best || t < best.t) best = { t, i };
+  });
+  return best;
+}
+const cronLabel = (c, i) => { const m = c.match(/^(\d+) (\d+) /); if (!m) return c; const t = new Date(Date.UTC(2026, 0, 1, +m[2], +m[1])); return `Her gün ${t.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} · ${i === 0 ? 'popüler proje' : 'yükselen proje'}`; };
+const statusChip = (r) => r.status !== 'completed' ? '<span class="chip run">çalışıyor…</span>' : r.conclusion === 'success' ? '<span class="chip ok">başarılı</span>' : r.conclusion === 'cancelled' ? '<span class="chip">iptal</span>' : '<span class="chip bad">hatalı</span>';
+
+function renderAuto() {
+  const v = $('autoView'), a = autoInfo; if (!a) { v.innerHTML = '<div class="card">Yükleniyor…</div>'; return; }
+  const nx = nextRun(a.crons), on = a.workflow === 'active';
+  const set = data.settings || {};
+  const val = (k, d) => (data[k] ?? d);
+  v.innerHTML = `<div class="agrid">
+  <div class="card"><h3>Durum</h3>
+    <div class="sec"><span>GitHub bağlantısı</span><b>${a.gh.ok ? `<span class="dot on"></span>${Slides.esc(a.gh.user)}` : '<span class="dot off"></span>Bağlı değil'}</b></div>
+    <div class="sec"><span>Depo</span><small>${Slides.esc(a.repo)}</small></div>
+    <div class="sec"><span>Otomasyon</span><b><span class="dot ${on ? 'on' : 'off'}"></span>${on ? 'Açık' : a.workflow === '?' ? 'bilinmiyor' : 'Kapalı'}</b></div>
+    ${a.crons.map((c, i) => `<div class="sec"><span>${cronLabel(c, i)}</span><small>${i === 0 ? '' : ''}</small></div>`).join('')}
+    <div class="sec"><span>Sonraki çalışma</span><b>${nx ? nx.t.toLocaleString('tr-TR', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) + ' · ' + (nx.i === 0 ? 'popüler' : 'yükselen') : '-'}</b></div>
+    <div class="row2"><button data-act="toggle" class="${on ? 'danger' : 'primary'}">${on ? '⏸ Otomasyonu kapat' : '▶ Otomasyonu aç'}</button><button data-act="refresh">Yenile</button></div>
+    <div class="note">Kapatınca zamanlanmış paylaşım durur; elle çalıştırma yine de yapılabilir.</div>
+  </div>
+  <div class="card"><h3>Gizli anahtarlar (GitHub)</h3>
+    ${ISECRETS.map(([k, d]) => `<div class="sec"><span>${a.secrets.includes(k) ? '✅' : '⬜'} ${k}<br><small>${d}</small></span><span class="chip ${a.secrets.includes(k) ? 'ok' : ''}">${a.secrets.includes(k) ? 'ekli' : 'eksik'}</span></div>`).join('')}
+    <div class="note ${a.secrets.includes('IG_ACCESS_TOKEN') ? '' : 'warn'}">${a.secrets.includes('IG_ACCESS_TOKEN') ? 'Instagram bağlantısı hazır görünüyor.' : 'Instagram anahtarları eksik: gerçek paylaşım için gerekli. Deneme (dry-run) bunlarsız çalışır.'}</div>
+  </div>
+  <div class="card"><h3>Şimdi çalıştır</h3>
+    <div class="row2"><label style="margin:0"><input type="radio" name="amode" value="popular" checked> Popüler proje</label><label style="margin:0"><input type="radio" name="amode" value="rising"> Yükselen (yeni) proje</label></div>
+    <div class="row2"><label class="chk" style="margin:0"><input type="checkbox" id="aDry" checked> Deneme: sadece slayt üret, Instagram'a paylaşma</label></div>
+    <div class="row2"><button data-act="run" class="primary">▶ Çalıştır</button></div>
+    <div class="note">Kuyrukta bekleyen post varsa o kullanılır; yoksa bot yeni proje seçer. Deneme çıktısını aşağıdaki "Son çalıştırmalar" bölümünden indirip görebilirsin.</div>
+  </div>
+  <div class="card"><h3>Ayarlar</h3><div class="set">
+    <label>Popüler: en az yıldız<input id="sMin" type="number" value="${val('minStars', 10000)}"></label>
+    <label>Kuyruk (en az bekleyen post)<input id="sQueue" type="number" value="${val('minQueue', 1)}"></label>
+    <label>Yükselen: en az yıldız<input id="sRMin" type="number" value="${val('risingMinStars', 50)}"></label>
+    <label>Yükselen: en çok yıldız<input id="sRMax" type="number" value="${val('risingMaxStars', 2000)}"></label>
+    <label>Yükselen: son kaç gün<input id="sRDays" type="number" value="${val('risingDays', 60)}"></label>
+    <label>Konular (virgülle, boşsa hepsi)<input id="sTopics" value="${Slides.esc((val('topics', []) || []).join(', '))}"></label>
+    <label class="full">Kendi seçtiklerim (sahip/repo, her satır bir tane; bot önce bunları paylaşır)<textarea id="sRepos" rows="3">${Slides.esc((val('repos', []) || []).join('\n'))}</textarea></label>
+    <label>Sayfa adı<input id="sBrand" value="${Slides.esc((data.brand || {}).name || 'Repo Rehberi')}"></label>
+    <label>Kullanıcı adı<input id="sHandle" value="${Slides.esc((data.brand || {}).handle || '@reporehberi')}"></label>
+  </div>
+  <div class="row2" style="margin-top:12px"><button data-act="push" class="primary">💾 Kaydet ve GitHub'a gönder</button><button data-act="pull">GitHub'dan al</button></div>
+  <div class="note">${a.git.dirty.length ? `<span class="warn">${a.git.dirty.length} yerel değişiklik GitHub'a gönderilmedi.</span>` : 'Yerel dosyalar GitHub ile aynı.'} ${a.git.behind ? `<span class="warn">GitHub'da ${a.git.behind} yeni commit var (bot yayınlamış olabilir): "GitHub'dan al".</span>` : ''}<br>Ayarlar ancak GitHub'a gönderilince bot tarafından kullanılır.</div>
+  </div>
+  <div class="card wide"><h3>Son çalıştırmalar</h3>
+    <table class="runs">${a.runs.map((r) => `<tr><td>${fmt(r.createdAt)}</td><td>${r.event === 'schedule' ? 'Zamanlı' : 'Elle'}</td><td>${statusChip(r)}</td><td style="text-align:right">
+      ${r.status !== 'completed' ? `<button data-act="cancel" data-id="${r.databaseId}">İptal</button>` : r.conclusion === 'success' ? `<button data-act="dl" data-id="${r.databaseId}">Çıktıyı indir / göster</button>` : ''}
+      <button data-act="web" data-url="${r.url}">GitHub'da aç</button></td></tr>`).join('') || '<tr><td>Henüz çalıştırma yok.</td></tr>'}</table>
+    ${autoFiles ? `<div class="row2" style="margin-top:12px"><b>Çalışma ${autoRun}</b>${autoFiles.length ? '' : '<span class="note">Bu çalışmada görsel çıktı yok (deneme değildi ya da paylaşıldı).</span>'}<button data-act="folder">📁 Klasörde aç</button></div><div class="gal">${autoFiles.map((f) => `<img src="/runfile/${autoRun}/${f}" data-act="zoom" data-src="/runfile/${autoRun}/${f}">`).join('')}</div>` : ''}
+  </div></div>`;
+}
+
+async function refreshAuto(quiet) {
+  try { autoInfo = await api('/api/auto/status'); } catch (e) { if (!quiet) toast('Durum alınamadı'); return; }
+  if (!$('autoView').hidden && !document.activeElement.closest('#autoView input, #autoView textarea')) renderAuto();
+}
+function openAuto() { $('autoView').hidden = false; $('btnAuto').textContent = '← Düzenleyici'; renderAuto(); refreshAuto(); clearInterval(autoT); autoT = setInterval(() => refreshAuto(true), 8000); }
+function closeAuto() { $('autoView').hidden = true; $('btnAuto').textContent = '⚙ Otomasyon'; clearInterval(autoT); }
+
+function readSettings() {
+  const n = (id, d) => { const x = parseInt($(id).value, 10); return Number.isFinite(x) ? x : d; };
+  data.minStars = n('sMin', 10000); data.minQueue = n('sQueue', 1); data.risingMinStars = n('sRMin', 50); data.risingMaxStars = n('sRMax', 2000); data.risingDays = n('sRDays', 60);
+  data.topics = $('sTopics').value.split(',').map((t) => t.trim()).filter(Boolean);
+  data.repos = $('sRepos').value.split('\n').map((t) => t.trim()).filter(Boolean);
+  (data.brand ||= {}).name = $('sBrand').value.trim() || 'Repo Rehberi'; data.brand.handle = $('sHandle').value.trim() || '@reporehberi';
+  $('brandName').value = data.brand.name; $('brandHandle').value = data.brand.handle;
+}
+
+document.addEventListener('click', async (e) => {
+  if (e.target.id === 'btnAuto') return $('autoView').hidden ? openAuto() : closeAuto();
+  const b = e.target.closest('[data-act]'); if (!b || !$('autoView').contains(b)) return;
+  const act = b.dataset.act, id = b.dataset.id;
+  const busy = async (fn) => { b.disabled = true; try { await fn(); } finally { b.disabled = false; } };
+  if (act === 'refresh') return refreshAuto();
+  if (act === 'web') return window.open(b.dataset.url, '_blank');
+  if (act === 'zoom') return window.open(b.dataset.src, '_blank');
+  if (act === 'folder') return api('/api/auto/open', { id: autoRun });
+  if (act === 'toggle') return busy(async () => { const r = await api('/api/auto/toggle', { enable: autoInfo.workflow !== 'active' }); toast(r.ok ? 'Tamam' : 'Hata: ' + r.msg); await refreshAuto(); });
+  if (act === 'cancel') return busy(async () => { const r = await api('/api/auto/cancel', { id }); toast(r.ok ? 'İptal istendi' : 'Hata: ' + r.msg); await refreshAuto(); });
+  if (act === 'run') return busy(async () => {
+    const dry = $('aDry').checked, mode = document.querySelector('input[name=amode]:checked').value;
+    if (!dry && !confirm('Bu GERÇEK paylaşım yapar (Instagram\'a gönderir). Devam edilsin mi?')) return;
+    const r = await api('/api/auto/run', { dry_run: dry, mode }); toast(r.ok ? (dry ? 'Deneme başladı' : 'Paylaşım başladı') : 'Hata: ' + r.msg);
+    setTimeout(refreshAuto, 4000);
+  });
+  if (act === 'dl') return busy(async () => { toast('İndiriliyor…'); const r = await api('/api/auto/download', { id }); if (!r.ok) return toast('Hata: ' + r.msg); autoRun = id; autoFiles = r.files; renderAuto(); });
+  if (act === 'pull') return busy(async () => { toast('Alınıyor…'); const r = await api('/api/auto/pull', {}); toast(r.ok ? 'GitHub ile eşitlendi' : 'Hata: ' + r.msg); if (r.ok) { data = await api('/api/posts'); refresh(); } await refreshAuto(); renderAuto(); });
+  if (act === 'push') return busy(async () => {
+    readSettings(); await fetch('/api/posts', { method: 'POST', body: JSON.stringify(data) });
+    toast('Gönderiliyor…'); const r = await api('/api/auto/push', {}); toast(r.ok ? 'GitHub\'a gönderildi' : 'Hata: ' + r.msg); await refreshAuto(); renderAuto();
+  });
+});

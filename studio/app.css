@@ -45,3 +45,28 @@ textarea{resize:vertical}
 .row{display:flex;gap:8px;margin-top:12px}.row select{flex:1}
 #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--acc);padding:9px 16px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none}
 #toast.show{opacity:1}
+
+#autoView{position:fixed;left:0;right:0;bottom:0;top:53px;background:var(--bg);overflow:auto;padding:18px 22px;z-index:20}
+#autoView[hidden]{display:none}
+.agrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;max-width:1400px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.card.wide{grid-column:1/-1}
+.row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:var(--muted)}
+.dot.on{background:var(--ok);box-shadow:0 0 10px var(--ok)}.dot.off{background:var(--bad)}
+.chip{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.chip.ok{color:var(--ok);border-color:var(--ok)}.chip.bad{color:var(--bad);border-color:var(--bad)}.chip.run{color:var(--acc);border-color:var(--acc)}
+.sec{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.sec:last-child{border:0}.sec small{color:var(--muted)}
+table.runs{width:100%;border-collapse:collapse;font-size:13px}
+table.runs td{padding:7px 6px;border-bottom:1px solid var(--line)}
+.gal{display:flex;gap:10px;overflow-x:auto;padding:8px 0}
+.gal img{height:300px;border-radius:10px;border:1px solid var(--line);cursor:zoom-in}
+.set{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.set label{margin:0}.set .full{grid-column:1/-1}
+.note{color:var(--muted);font-size:12px;margin-top:6px}
+.warn{color:#fbbf24}
+.card input[type=radio],.card input[type=checkbox]{display:inline-block;width:auto;margin:0 6px 0 0}
+.chip{white-space:nowrap;display:inline-block}
+.sec .chip{align-self:center}
