@@ -90,11 +90,18 @@
     return out.slice(0, 2);
   }
 
+  // :books: gibi emoji kodları, görsel/link sözdizimi ve çıplak URL'leri temizler
+  const clean = (t = '') => String(t).replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/\[\]\(\S*/g, '').replace(/https?:\/\/\S+/g, '').replace(/:[a-z0-9_+-]+:/gi, '').replace(/<[^>]+>/g, '').replace(/[*_`]/g, '').replace(/\s+/g, ' ').trim();
+
   // README'nin ilk anlamlı paragrafı (yapay zeka özeti yoksa "ne yapar" slaytı için)
   function firstParagraph(readme = '') {
-    const p = readme.split(/\r?\n\r?\n/).map((b) => b.replace(/\s+/g, ' ').trim())
-      .find((b) => b.length > 50 && !/^[#!\[<|>\-*`]/.test(b));
-    return p ? p.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_`]/g, '').slice(0, 220) : '';
+    for (const block of readme.split(/\r?\n\r?\n/)) {
+      if (/^\s*[#|>\-*`]/.test(block) || /^\s*!?\[/.test(block)) continue;
+      const t = clean(block);
+      if (t.length >= 50 && /[.!?…]$/.test(t) && !/[\[\]]/.test(t)) return t.length > 220 ? t.slice(0, 217).replace(/\s+\S*$/, '') + '…' : t;
+    }
+    return '';
   }
 
   // ai: { tagline, explain, icon, hook, features: ["🔧 metin", ...] } (opsiyonel, Türkçe özet)
@@ -116,10 +123,10 @@
       id, published: false, theme: theme === undefined ? 'neon' : theme, source: g.full_name,
       caption: `${ai.hook || `${g.name} — ${g.description || 'harika bir açık kaynak proje'}`} 🚀\n\n${ai.explain || ''}${ai.explain ? '\n\n' : ''}Kaydır ve kurulumu gör.\n\n${g.html_url}\n\n${tags}`,
       slides: [
-        { type: 'cover', icon: ai.icon || '⭐', title: g.name, subtitle: ai.tagline || g.description || '' },
-        { type: 'explain', kicker: 'Ne işe yarar?', icon: '💡', text: ai.explain || firstParagraph(readme) || g.description || g.name },
+        { type: 'cover', icon: ai.icon || '⭐', title: g.name, subtitle: ai.tagline || clean(g.description) || '' },
+        { type: 'explain', kicker: 'Ne işe yarar?', icon: '💡', text: ai.explain || firstParagraph(readme) || clean(g.description) || g.name },
         { type: 'cards', title: 'Neler yapabiliyor?', items: ai.features && ai.features.length ? ai.features : feats.map((f, i) => `${['⚙️', '📜', '🍴', '🕒'][i] || '✦'} ${f}`) },
-        { type: 'stat', value: stars, title: 'GitHub yıldızı', text: feats[0] || '' },
+        { type: 'stat', value: stars, title: 'GitHub yıldızı', text: `${fork} kez fork edildi` },
         ...steps,
         { type: 'cta', title: 'Yıldız ver ⭐', text: `github.com/${g.full_name}` },
       ],
