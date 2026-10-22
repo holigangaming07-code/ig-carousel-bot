@@ -38,7 +38,7 @@ async function llm(prompt) {
 
 async function aiSummary(g, readme) {
   const prompt = `Aşağıdaki GitHub projesini 8 slaytlık bir Instagram carousel için sade, akıcı, samimi TÜRKÇE ile anlat. SADECE geçerli JSON döndür, başka metin yazma.
-Kurallar: her metin kısa olsun (belirtilen karakter sınırını AŞMA). "icon" alanları TEK emoji olsun. Bilmediğin şeyi uydurma; README'de olmayan komut/adres yazma. Proje bir uygulama değil de liste/doküman ise kurulum ve indirme kısımlarını buna göre dürüstçe yaz.
+Kurallar: her metin kısa olsun (belirtilen karakter sınırını AŞMA). "icon" alanları TEK emoji olsun. Adım metinlerinin başına numara veya 1️⃣ gibi emoji koyma. Bilmediğin şeyi uydurma; README'de olmayan komut/adres yazma. Proje bir uygulama değil de liste/doküman ise kurulum ve indirme kısımlarını buna göre dürüstçe yaz.
 JSON şeması:
 {
  "tagline": "projeyi anlatan tek cümle, en fazla 60 karakter",

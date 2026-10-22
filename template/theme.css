@@ -168,3 +168,10 @@ h1, .bignum { background: linear-gradient(100deg, var(--fg) 20%, var(--accent) 1
 .tile b { font-size: 48px; }
 .rv-legend { gap: 7px; padding: 14px; }
 .lv { padding: 6px 12px; }
+
+/* sunucu yazı tipi (DejaVu) daha geniş: sıkıştır */
+.lv { white-space: nowrap; }
+.rv-legend { width: 250px; }
+.slide.rv { gap: 14px; }
+.rv-deco { min-height: 0; }
+.rv-note { flex: none; }

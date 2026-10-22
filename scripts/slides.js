@@ -59,6 +59,7 @@
 
   // ---- Repo Rehberi şablonu (rv*): örnek tasarımlara göre ----
   const LEVELS = [['0-999', '#9aa4b2'], ['1K-9.9K', '#34d399'], ['10K-49.9K', '#3b9bff'], ['50K-99.9K', '#a78bfa'], ['100K+', '#ffb02e']];
+  const stepText = (t) => String(t.text || t).replace(/^[\s\u20E3\uFE0F0-9.)\-]+(?=\S)/u, '');
   const arr = (a) => (Array.isArray(a) ? a : []);
   const hdr = (ctx) => `<div class="rv-hdr"><span>📖</span>${esc(String((ctx.brand && ctx.brand.name) || 'Repo Rehberi').toUpperCase())}</div>`;
   const ttl = (t, sub, size) => `<div class="rv-title" style="font-size:${size || Math.max(62, Math.min(104, Math.floor(940 / (String(t).length * 0.58))))}px">${esc(t)}</div>${sub ? `<div class="rv-sub">${esc(sub)}</div>` : ''}`;
@@ -82,24 +83,24 @@
     <div class="rv-grid">${arr(s.audience).slice(0, 4).map((a, i) => `<div class="aud c${i % 4}"><div class="h"><span class="av">${esc(a.icon || '🙂')}</span><div><b>${esc(a.name)}</b><p>${esc(a.text)}</p></div></div>${arr(a.needs).slice(0, 3).map((n) => `<div class="nd">${esc(n)}</div>`).join('')}</div>`).join('')}</div>
     ${deco(s.categories)}${banner('📖', s.bottom)}`,
     rvSetup: (s, c) => `${hdr(c)}${ttl(s.title || 'Kurulum gerekiyor mu?', s.intro)}
-    <div class="rv-steps">${arr(s.steps).slice(0, 3).map((t, i) => `<div class="st c${i}"><div class="n">${i + 1}</div><div class="e">${esc(t.icon || '')}</div>${esc(t.text || t)}</div>`).join('')}</div>
+    <div class="rv-steps">${arr(s.steps).slice(0, 3).map((t, i) => `<div class="st c${i}"><div class="n">${i + 1}</div><div class="e">${esc(t.icon || '')}</div>${esc(stepText(t))}</div>`).join('')}</div>
     <div class="rv-notes">${arr(s.notes).slice(0, 3).map((n, i) => `<div class="nt c${i}">${esc(n)}</div>`).join('')}</div>
     ${legend(s.tier, true)}${deco(s.categories)}${banner('💡', s.bottom)}`,
     rvSections: (s, c) => `${hdr(c)}${ttl(s.title || 'Neler var?', s.intro)}
     <div class="rv-cols">${arr(s.sections).slice(0, 3).map((x, i) => `<div class="col c${i}"><b>${esc(x.icon || '')} ${esc(x.name)}</b><p>${esc(x.text)}</p>${arr(x.items).slice(0, 4).map((t) => `<div class="it">${esc(t)}</div>`).join('')}</div>`).join('')}</div>
-    <div class="rv-mid">${legend(s.tier)}${s.note ? `<div class="rv-note">💡 ${esc(s.note)}</div>` : ''}</div>${deco(s.categories)}${banner('📖', s.bottom)}`,
+    ${s.note ? `<div class="rv-note">💡 ${esc(s.note)}</div>` : ''}${legend(s.tier, true)}${deco(s.categories)}${banner('📖', s.bottom)}`,
     rvUsage: (s, c) => `${hdr(c)}${ttl(s.title || 'Nasıl kullanılır?', s.intro)}
-    <div class="rv-steps">${arr(s.steps).slice(0, 3).map((t, i) => `<div class="st c${i}"><div class="n">${i + 1}</div><div class="e">${esc(t.icon || '')}</div>${esc(t.text || t)}</div>`).join('')}</div>
+    <div class="rv-steps">${arr(s.steps).slice(0, 3).map((t, i) => `<div class="st c${i}"><div class="n">${i + 1}</div><div class="e">${esc(t.icon || '')}</div>${esc(stepText(t))}</div>`).join('')}</div>
     ${s.link ? `<div class="rv-url">🔗 ${esc(s.link)}</div>` : ''}
-    <div class="rv-mid">${legend(s.tier)}<div class="rv-ex"><div class="lt">🔎 ÖRNEKLER</div>${arr(s.examples).slice(0, 4).map((e) => `<div class="it">${esc(e)}</div>`).join('')}</div></div>${deco(s.categories)}${banner('📖', s.bottom)}`,
+    <div class="rv-notes">${arr(s.examples).slice(0, 4).map((e, i) => `<div class="nt c${i}">🔎 ${esc(e)}</div>`).join('')}</div>${legend(s.tier, true)}${deco(s.categories)}${banner('📖', s.bottom)}`,
     rvDownload: (s, c) => `${hdr(c)}${ttl(s.title || 'İstersen bilgisayarına da indirebilirsin', s.intro)}
-    <div class="rv-mid">${legend(s.tier)}<div class="rv-term"><span>$</span> ${esc(s.command)}</div></div>
+    <div class="rv-term"><span>$</span> ${esc(s.command)}</div>
     <div class="rv-steps">${arr(s.advantages).slice(0, 3).map((a, i) => `<div class="st c${i + 1}"><div class="e">${esc(a.icon || '')}</div><b>${esc(a.title)}</b><p>${esc(a.text || '')}</p></div>`).join('')}</div>
     ${s.alt ? `<div class="rv-card wide c1"><span class="ci2">📦</span><div><b>${esc(s.alt.title)}</b><p>${esc(s.alt.text)}</p></div></div>` : ''}
     <div class="rv-deco"></div>${banner('💡', s.note)}`,
     rvFinal: (s, c) => `${hdr(c)}${ttl(s.title || 'Kaydet, takip et, keşfet', s.intro)}
     <div class="rv-table">${arr(s.rows).slice(0, 5).map((r, i) => `<div class="tr c${i % 4}"><span class="k">${esc(r.icon || '')} ${esc(r.k)}</span><span class="v">${esc(r.v)}</span></div>`).join('')}</div>
-    <div class="rv-mid">${legend(s.tier)}</div>${deco(s.categories)}
+    ${legend(s.tier, true)}${deco(s.categories)}
     <div class="rv-cta"><div class="c0">🔖 Bu gönderiyi <b>kaydet</b></div><div class="c1">✈️ Arkadaşına <b>gönder</b></div><div class="c2">👤 ${esc((c.brand && c.brand.name) || 'Repo Rehberi')}'ni <b>takip et</b></div></div>`,
   };
   Object.assign(builders, rv);
