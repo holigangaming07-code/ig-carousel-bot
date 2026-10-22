@@ -119,21 +119,9 @@ async function fromGithub() {
     const r = await fetch('https://api.github.com/repos/' + repo);
     if (!r.ok) throw new Error(r.status === 404 ? 'Repo bulunamadı' : 'GitHub hatası ' + r.status);
     const g = await r.json();
-    const stars = g.stargazers_count >= 1000 ? (g.stargazers_count / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(g.stargazers_count);
-    const feats = [g.language && `${g.language} ile yazıldı`, g.license?.spdx_id && g.license.spdx_id !== 'NOASSERTION' && `${g.license.spdx_id} lisanslı`, ...(g.topics || []).slice(0, 3).map((t) => '#' + t)].filter(Boolean);
-    const tags = ['#github', '#opensource', ...(g.topics || []).slice(0, 5).map((t) => '#' + t.replace(/-/g, ''))].join(' ');
-    const p = {
-      id: uniqueId(g.name.toLowerCase().replace(/[^\w.-]/g, '-')), published: false, theme: 'neon',
-      caption: `${g.name} — ${g.description || 'harika bir açık kaynak proje'} 🚀\n\nKaydır ve kurulumu 3 adımda gör.\n\n${g.html_url}\n\n${tags}`,
-      slides: [
-        { type: 'cover', title: g.name, subtitle: g.description || '' },
-        { type: 'stat', value: stars, title: 'GitHub yıldızı', text: g.language || '' },
-        { type: 'list', title: 'Öne çıkanlar', items: feats.length ? feats : ['Açık kaynak'] },
-        { type: 'step', number: 1, title: 'Klonla', code: `git clone ${g.html_url}` },
-        { type: 'step', number: 2, title: 'İçine gir', code: `cd ${g.name}`, text: 'Sonra README\'deki kurulum komutunu çalıştır.' },
-        { type: 'cta', title: 'Yıldız ver ⭐', text: `github.com/${repo}` },
-      ],
-    };
+    let readme = '';
+    try { readme = await (await fetch('https://api.github.com/repos/' + repo + '/readme', { headers: { Accept: 'application/vnd.github.raw+json' } })).text(); } catch (_) {}
+    const p = Slides.postFromRepo(g, uniqueId(g.name.toLowerCase().replace(/[^\w.-]/g, '-')), readme);
     data.posts.push(p); pi = data.posts.length - 1; si = 0; refresh(); save(); status('Carousel hazır ✓', 'ok');
   } catch (e) { status(e.message, 'err'); toast(e.message); }
 }

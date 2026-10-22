@@ -55,7 +55,47 @@
       .replace('{{COUNTER}}', `${index + 1}/${total}`);
   }
 
-  const api = { esc, builders, fill };
+  const THEME_IDS = ['', 'sunset', 'neon', 'forest', 'paper'];
+  const INSTALL_RE = /^(npm (i|install)|npx|yarn add|pnpm (add|dlx)|pip3? install|pipx install|cargo install|brew install|go install|docker run|curl .*\| ?(ba)?sh)\b/;
+
+  // README metninden kurulum komutlarını (kod bloklarından) ayıklar
+  function installCommands(readme = '') {
+    const out = [];
+    for (const block of readme.match(/```[^\n]*\n[\s\S]*?```/g) || []) {
+      for (let l of block.split('\n').slice(1, -1)) {
+        l = l.replace(/^\$\s*/, '').trim();
+        if (INSTALL_RE.test(l) && l.length <= 80 && !out.includes(l)) out.push(l);
+      }
+    }
+    return out.slice(0, 2);
+  }
+
+  // GitHub API'nin repo nesnesinden (+ README'den) hazır carousel postu üretir
+  function postFromRepo(g, id, readme, theme) {
+    const stars = g.stargazers_count >= 1000 ? (g.stargazers_count / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(g.stargazers_count);
+    const feats = [g.language && `${g.language} ile yazıldı`, g.license && g.license.spdx_id && g.license.spdx_id !== 'NOASSERTION' && `${g.license.spdx_id} lisanslı`, ...(g.topics || []).slice(0, 3).map((t) => '#' + t)].filter(Boolean);
+    const tags = ['#github', '#opensource', ...(g.topics || []).slice(0, 5).map((t) => '#' + t.replace(/-/g, ''))].join(' ');
+    const cmds = installCommands(readme);
+    const steps = [
+      { type: 'step', number: 1, title: cmds[0] ? 'Kur' : 'Klonla', code: cmds[0] || `git clone ${g.html_url}` },
+      cmds[1]
+        ? { type: 'step', number: 2, title: 'Çalıştır', code: cmds[1] }
+        : { type: 'step', number: 2, title: 'İçine gir', code: `cd ${g.name}`, text: "Sonra README'deki kurulum komutunu çalıştır." },
+    ];
+    return {
+      id, published: false, theme: theme === undefined ? 'neon' : theme, source: g.full_name,
+      caption: `${g.name} — ${g.description || 'harika bir açık kaynak proje'} 🚀\n\nKaydır ve kurulumu gör.\n\n${g.html_url}\n\n${tags}`,
+      slides: [
+        { type: 'cover', title: g.name, subtitle: g.description || '' },
+        { type: 'stat', value: stars, title: 'GitHub yıldızı', text: g.language || '' },
+        { type: 'list', title: 'Öne çıkanlar', items: feats.length ? feats : ['Açık kaynak'] },
+        ...steps,
+        { type: 'cta', title: 'Yıldız ver ⭐', text: `github.com/${g.full_name}` },
+      ],
+    };
+  }
+
+  const api = { esc, builders, fill, installCommands, postFromRepo, THEME_IDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Slides = api;
 })(this);

@@ -41,6 +41,11 @@ jobs:
       - name: Playwright Chromium kur
         run: npx playwright install --with-deps chromium
 
+      - name: Yeni post üret (kuyruk boşsa GitHub'dan otomatik proje seç)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/generate.js
+
       - name: Render
         run: node scripts/render.js
 
