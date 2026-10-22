@@ -19,7 +19,7 @@ async function llm(prompt) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: process.env.AI_MODEL || 'claude-haiku-5-5', max_tokens: 1200, thinking: { type: 'disabled' }, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model: process.env.AI_MODEL || 'claude-haiku-5-5', max_tokens: 4000, thinking: { type: 'disabled' }, messages: [{ role: 'user', content: prompt }] }),
     });
     if (!r.ok) throw new Error(`Anthropic ${r.status}: ${(await r.text()).slice(0, 200)}`);
     const block = (await r.json()).content.find((b) => b.type === 'text');
@@ -37,19 +37,56 @@ async function llm(prompt) {
 }
 
 async function aiSummary(g, readme) {
-  const prompt = `Aşağıdaki GitHub projesini Instagram carousel için sade ve akıcı TÜRKÇE ile özetle. SADECE JSON döndür, başka metin yok:
-{"tagline": "projeyi anlatan kısa slogan, en fazla 70 karakter", "explain": "projenin ne işe yaradığını, kimin işine yaradığını 2-3 cümlede anlat, en fazla 220 karakter", "icon": "projeyi temsil eden TEK emoji", "hook": "dikkat çekici tek cümlelik caption girişi", "features": ["emoji + kısa özellik, her biri en fazla 36 karakter, tam 4 adet"], "audience": ["emoji + kimler için uygun, her biri en fazla 36 karakter, tam 4 adet"]}
+  const prompt = `Aşağıdaki GitHub projesini 8 slaytlık bir Instagram carousel için sade, akıcı, samimi TÜRKÇE ile anlat. SADECE geçerli JSON döndür, başka metin yazma.
+Kurallar: her metin kısa olsun (belirtilen karakter sınırını AŞMA). "icon" alanları TEK emoji olsun. Bilmediğin şeyi uydurma; README'de olmayan komut/adres yazma. Proje bir uygulama değil de liste/doküman ise kurulum ve indirme kısımlarını buna göre dürüstçe yaz.
+JSON şeması:
+{
+ "tagline": "projeyi anlatan tek cümle, en fazla 60 karakter",
+ "hook": "dikkat çekici tek cümlelik caption girişi",
+ "summary": "projenin ana faydası, 1 cümle, en fazla 70 karakter",
+ "description": "ne sunuyor, ne işe yarıyor, 2 cümle, en fazla 190 karakter",
+ "promise": "öne çıkan vaat / ana mesaj, en fazla 55 karakter",
+ "features": [ {"icon":"emoji","title":"en fazla 22 karakter","text":"en fazla 38 karakter"} ],   // tam 4 adet
+ "extra": {"icon":"emoji","title":"topluluk/güncellik gibi ekstra not, en fazla 36 karakter","text":"en fazla 50 karakter"},
+ "audience_intro": "hedef kitleye dair 1 cümle, en fazla 55 karakter",
+ "audience": [ {"icon":"emoji","name":"en fazla 20 karakter","text":"en fazla 30 karakter","needs":["en fazla 24 karakter","...","..."]} ],   // tam 4 adet, needs tam 3
+ "audience_bottom": "neden ilgililer kullanmalı, en fazla 55 karakter",
+ "setup_intro": "kurulum gerekiyor mu, 1 cümle, en fazla 55 karakter",
+ "setup_steps": [ {"icon":"emoji","text":"en fazla 28 karakter"} ],   // tam 3 adet
+ "setup_notes": ["en fazla 30 karakter","...","..."],   // tam 3
+ "setup_bottom": "kısa önemli not/ipucu, en fazla 55 karakter",
+ "sections_title": "Neler var? gibi kısa başlık, en fazla 24 karakter",
+ "sections_intro": "en fazla 55 karakter",
+ "sections": [ {"icon":"emoji","name":"en fazla 16 karakter","text":"en fazla 26 karakter","items":["en fazla 20 karakter","...","...","..."]} ],   // tam 3 adet, items tam 4
+ "sections_note": "dikkat çeken kısa not, en fazla 60 karakter",
+ "sections_bottom": "bu bölümler nasıl işe yarar, en fazla 55 karakter",
+ "usage_intro": "nasıl kullanılır, 1 cümle, en fazla 55 karakter",
+ "usage_steps": [ {"icon":"emoji","text":"en fazla 26 karakter"} ],   // tam 3 adet
+ "usage_link": "README'de varsa web sitesi/arama adresi, yoksa github.com/${g.full_name}",
+ "usage_examples": ["en fazla 22 karakter","...","...","..."],   // tam 4
+ "usage_bottom": "en fazla 55 karakter",
+ "download_intro": "indirmek zorunlu mu, 1 cümle, en fazla 55 karakter",
+ "download_command": "git clone https://github.com/${g.full_name}.git",
+ "download_advantages": [ {"icon":"emoji","title":"en fazla 18 karakter","text":"en fazla 40 karakter"} ],   // tam 3 adet
+ "download_alt": {"title":"Alternatif yöntem başlığı, en fazla 30 karakter","text":"en fazla 70 karakter"},
+ "download_note": "önemli not/sınırlama/ipucu, en fazla 80 karakter",
+ "final_intro": "seri vaadi, en fazla 55 karakter",
+ "final_purpose": "ana amaç, en fazla 34 karakter",
+ "final_install": "kurulum durumu, en fazla 34 karakter",
+ "final_extra": "ekstra bilgi, en fazla 34 karakter",
+ "categories": ["kısa kategori etiketi, en fazla 14 karakter", "...", "...", "...", "..."]   // tam 5
+}
 
 Proje: ${g.full_name}
 Açıklama: ${g.description}
+Dil: ${g.language}
 README:
-${readme.slice(0, 6000)}`;
+${readme.slice(0, 7000)}`;
   try {
     const text = await llm(prompt);
     if (!text) throw new Error('yapay zeka anahtarı/servisi yok veya boş yanıt');
-    console.log(`Yapay zeka yanıtı: ${text.slice(0, 200).replace(/\s+/g, ' ')}`);
     const j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
-    if (!j.explain || !Array.isArray(j.features)) throw new Error('eksik alan');
+    if (!j.summary || !Array.isArray(j.features) || !j.features.length) throw new Error('eksik alan');
     return j;
   } catch (e) {
     console.warn(`Yapay zeka özeti alınamadı (${e.message}), README özeti kullanılacak.`);

@@ -9,12 +9,20 @@ const TYPES = {
   stat: { label: 'Rakam ✦', fields: [['value', 'Büyük rakam'], ['title', 'Başlık'], ['text', 'Not', 'area']], init: { value: '1.2k', title: 'GitHub yıldızı' } },
   explain: { label: 'Açıklama ✦', fields: [['kicker', 'Etiket'], ['icon', 'Emoji'], ['text', 'Metin', 'area']], init: { kicker: 'Ne işe yarar?', icon: '💡', text: 'Projenin ne yaptığını burada anlat.' } },
   cards: { label: 'Kartlar ✦', fields: [['title', 'Başlık'], ['items', 'Kartlar (her satır: emoji metin)', 'list']], init: { title: 'Neler yapabiliyor?', items: ['⚡ Hızlı', '🔒 Güvenli'] } },
+  rvCover: { label: 'Şablon: Kapak', fields: [['__json', 'Veri (JSON)', 'json']], init: { tier: 2, title: 'repo-adi', tagline: 'Kısa tanım', stars: '12.345', date: '1 Ocak 2026', forks: '1.234', owner: 'sahip', repo: 'repo-adi', promise: 'Ana mesaj' } },
+  rvExplain: { label: 'Şablon: Ne işe yarar', fields: [['__json', 'Veri (JSON)', 'json']], init: { tier: 2, summary: 'Tek cümle', description: 'Açıklama', features: [{ icon: '⚙️', title: 'Özellik', text: 'Kısa açıklama' }] } },
+  rvAudience: { label: 'Şablon: Kimler için', fields: [['__json', 'Veri (JSON)', 'json']], init: { tier: 2, intro: 'Hedef kitle', audience: [{ icon: '👩‍💻', name: 'Geliştiriciler', text: 'Kısa tanım', needs: ['İhtiyaç 1', 'İhtiyaç 2'] }], bottom: 'Ana sonuç' } },
+  rvSetup: { label: 'Şablon: Kurulum', fields: [['__json', 'Veri (JSON)', 'json']], init: { tier: 2, intro: 'Kurulum var mı?', steps: [{ icon: '⚙️', text: 'Adım 1' }], notes: ['Not 1'], owner: 'sahip', repo: 'repo', bottom: 'İpucu' } },
+  rvSections: { label: 'Şablon: Bölümler', fields: [['__json', 'Veri (JSON)', 'json']], init: { tier: 2, title: 'Neler var?', intro: 'Açıklama', sections: [{ icon: '📁', name: 'Bölüm', text: 'Kısa', items: ['Öğe 1'] }], note: 'Dikkat çeken not', bottom: 'Mesaj' } },
+  rvUsage: { label: 'Şablon: Kullanım', fields: [['__json', 'Veri (JSON)', 'json']], init: { tier: 2, intro: 'Nasıl kullanılır', steps: [{ icon: '🖱️', text: 'Adım 1' }], link: 'github.com/sahip/repo', examples: ['Örnek 1'], bottom: 'Mesaj' } },
+  rvDownload: { label: 'Şablon: İndirme', fields: [['__json', 'Veri (JSON)', 'json']], init: { tier: 2, intro: 'Zorunlu mu?', command: 'git clone https://github.com/sahip/repo', advantages: [{ icon: '🏆', title: 'Avantaj', text: 'Kısa' }], alt: { title: 'Alternatif', text: 'ZIP indir' }, note: 'Not' } },
+  rvFinal: { label: 'Şablon: Kapanış', fields: [['__json', 'Veri (JSON)', 'json']], init: { tier: 2, intro: 'Seri vaadi', rows: [{ icon: '💻', k: 'Proje:', v: 'repo' }] } },
   quote: { label: 'Alıntı ✦', fields: [['text', 'Alıntı', 'area'], ['author', 'Yazar']], init: { text: 'Basit olan kazanır.', author: 'Anonim' } },
 };
 const THEMES = [
   ['', 'GitHub Dark', '#2f81f7,#0d1117'], ['sunset', 'Sunset', '#ff7a45,#1a0f1f'], ['neon', 'Neon', '#b45cff,#0b0820'],
-  ['forest', 'Forest', '#34d399,#0c1a14'], ['paper', 'Paper', '#c2410c,#f6f1e7'],
-  ['rising', 'Yükselen', '#2ee6a6,#05131a'], ['blue', 'Popüler', '#3b9bff,#060d1f'], ['violet', 'Çok popüler', '#8b6bff,#0a0720'], ['magenta', 'Efsane', '#ff4fd8,#12061c'], ['gold', 'Dev', '#ffb02e,#150d05'],
+  ['forest', 'Forest', '#34d399,#0c1a14'], ['paper', 'Paper', '#c2410c,#f6f1e7'], ['steel', 'Gri 0-999', '#9db4d6,#080d18'],
+  ['rising', 'Yeşil 1K-9.9K', '#2ee6a6,#05131a'], ['blue', 'Mavi 10K-49.9K', '#3b9bff,#060d1f'], ['violet', 'Mor 50K-99.9K', '#8b6bff,#0a0720'], ['gold', 'Altın 100K+', '#ffb02e,#150d05'],
 ];
 let data, css, tpl, pi = 0, si = 0, saveT, thumbT;
 const post = () => data.posts[pi];
@@ -75,6 +83,12 @@ function renderFields() {
   const s = slide(); if (!s) return;
   (TYPES[s.type]?.fields || []).forEach(([key, label, kind]) => {
     const w = document.createElement('label'); w.textContent = label;
+    if (kind === 'json') {
+      const el = document.createElement('textarea'); el.rows = 18; el.style.fontFamily = 'Consolas, monospace'; el.style.fontSize = '12px';
+      const { type, ...rest } = s; el.value = JSON.stringify(rest, null, 2);
+      el.oninput = () => { try { const o = JSON.parse(el.value); Object.keys(s).forEach((k) => k !== 'type' && delete s[k]); Object.assign(s, o); el.style.borderColor = ''; renderPreview(); save(); clearTimeout(thumbT); thumbT = setTimeout(renderFilm, 400); } catch (e) { el.style.borderColor = '#f87171'; } };
+      w.appendChild(el); box.appendChild(w); return;
+    }
     const el = document.createElement(kind ? 'textarea' : 'input');
     if (kind) el.rows = kind === 'code' || kind === 'list' ? 4 : 2;
     if (kind === 'code') el.style.fontFamily = 'Consolas, monospace';
