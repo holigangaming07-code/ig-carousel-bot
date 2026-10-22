@@ -13,6 +13,34 @@ async function gh(path, accept) {
   return accept ? r.text() : r.json();
 }
 
+// ANTHROPIC_API_KEY varsa README'yi Türkçe özetletir; yoksa null döner (şablon README'nin ilk paragrafına düşer)
+async function aiSummary(g, readme) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return null;
+  const prompt = `Aşağıdaki GitHub projesini Instagram carousel için Türkçe özetle. SADECE JSON döndür, başka metin yok:
+{\"tagline\": \"projeyi anlatan kısa slogan, en fazla 70 karakter\", \"explain\": \"projenin ne işe yaradığını, kimin işine yaradığını sade Türkçe ile 2-3 cümlede anlat, en fazla 220 karakter\", \"icon\": \"projeyi temsil eden TEK emoji\", \"hook\": \"dikkat çekici tek cümlelik caption girişi\", \"features\": [\"emoji + kısa özellik, her biri en fazla 36 karakter, tam 4 adet\"]}
+
+Proje: ${g.full_name}
+Açıklama: ${g.description}
+README:
+${readme.slice(0, 6000)}`;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: process.env.AI_MODEL || 'claude-haiku-5-5', max_tokens: 700, messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!r.ok) throw new Error(`API ${r.status}`);
+    const text = (await r.json()).content[0].text;
+    const j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+    if (!j.explain || !Array.isArray(j.features)) throw new Error('eksik alan');
+    return j;
+  } catch (e) {
+    console.warn(`Yapay zeka özeti alınamadı (${e.message}), README özeti kullanılacak.`);
+    return null;
+  }
+}
+
 async function findRepo(data, used) {
   const own = (data.repos || []).filter((r) => !used.has(r.toLowerCase()));
   if (own.length) return gh(`/repos/${own[0]}`);
@@ -42,7 +70,7 @@ async function findRepo(data, used) {
 
   let id = g.name.toLowerCase().replace(/[^\w.-]/g, '-');
   for (let n = 2; data.posts.some((p) => p.id === id); n++) id = `${g.name.toLowerCase()}-${n}`;
-  const post = postFromRepo(g, id, readme, pick(THEME_IDS));
+  const post = postFromRepo(g, id, readme, pick(THEME_IDS), await aiSummary(g, readme));
   data.posts.push(post);
   savePosts(data);
   console.log(`✔ Yeni post üretildi: ${post.id} (${g.full_name}, ${post.slides.length} slayt)`);

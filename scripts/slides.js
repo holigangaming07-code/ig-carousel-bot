@@ -12,6 +12,7 @@
   const builders = {
     cover: (s) => `
     <div class="badge">${esc(s.badge || 'GitHub Projesi')}</div>
+    ${s.icon ? `<div class="icon-circle">${esc(s.icon)}</div>` : ''}
     <h1>${esc(s.title)}</h1>
     <p class="sub">${esc(s.subtitle)}</p>
     <div class="swipe">Kaydır →</div>`,
@@ -38,6 +39,17 @@
     <div class="bignum" style="font-size:${Math.min(260, Math.floor(880 / (String(s.value).length * 0.62)))}px">${esc(s.value)}</div>
     <h2>${esc(s.title)}</h2>
     ${s.text ? `<p>${esc(s.text)}</p>` : ''}`,
+    explain: (s) => `
+    <div class="kicker">${esc(s.kicker || 'Ne işe yarar?')}</div>
+    <div class="icon-circle">${esc(s.icon || '💡')}</div>
+    <div class="bigtext" style="font-size:${String(s.text || '').length > 180 ? 50 : 58}px">${esc(s.text)}</div>`,
+    cards: (s) => `
+    <h2>${esc(s.title)}</h2>
+    <div class="cards">${(s.items || []).map((i) => {
+      const m = String(i).match(/^(\S+)\s+([\s\S]*)$/);
+      const hasIcon = m && /[^\x00-\x7F]/.test(m[1]);
+      return `<div class="card"><span class="ci">${esc(hasIcon ? m[1] : '✦')}</span><span>${esc(hasIcon ? m[2] : i)}</span></div>`;
+    }).join('')}</div>`,
     quote: (s) => `
     <div class="qmark">“</div>
     <blockquote>${esc(s.text)}</blockquote>
@@ -78,8 +90,17 @@
     return out.slice(0, 2);
   }
 
+  // README'nin ilk anlamlı paragrafı (yapay zeka özeti yoksa "ne yapar" slaytı için)
+  function firstParagraph(readme = '') {
+    const p = readme.split(/\r?\n\r?\n/).map((b) => b.replace(/\s+/g, ' ').trim())
+      .find((b) => b.length > 50 && !/^[#!\[<|>\-*`]/.test(b));
+    return p ? p.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_`]/g, '').slice(0, 220) : '';
+  }
+
+  // ai: { tagline, explain, icon, hook, features: ["🔧 metin", ...] } (opsiyonel, Türkçe özet)
   // GitHub API'nin repo nesnesinden (+ README'den) hazır carousel postu üretir
-  function postFromRepo(g, id, readme, theme) {
+  function postFromRepo(g, id, readme, theme, ai) {
+    ai = ai || {};
     const stars = g.stargazers_count >= 1000 ? (g.stargazers_count / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(g.stargazers_count);
     const fork = g.forks_count >= 1000 ? (g.forks_count / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(g.forks_count || 0);
     const feats = [g.language && `${g.language} ile yazıldı`, g.license && g.license.spdx_id && g.license.spdx_id !== 'NOASSERTION' && `${g.license.spdx_id} lisanslı`, `${fork} kez fork edildi`, g.pushed_at && `Son güncelleme: ${g.pushed_at.slice(0, 10)}`].filter(Boolean);
@@ -93,11 +114,12 @@
     ];
     return {
       id, published: false, theme: theme === undefined ? 'neon' : theme, source: g.full_name,
-      caption: `${g.name} — ${g.description || 'harika bir açık kaynak proje'} 🚀\n\nKaydır ve kurulumu gör.\n\n${g.html_url}\n\n${tags}`,
+      caption: `${ai.hook || `${g.name} — ${g.description || 'harika bir açık kaynak proje'}`} 🚀\n\n${ai.explain || ''}${ai.explain ? '\n\n' : ''}Kaydır ve kurulumu gör.\n\n${g.html_url}\n\n${tags}`,
       slides: [
-        { type: 'cover', title: g.name, subtitle: g.description || '' },
-        { type: 'stat', value: stars, title: 'GitHub yıldızı', text: g.language || '' },
-        { type: 'list', title: 'Öne çıkanlar', items: feats.length ? feats : ['Açık kaynak'] },
+        { type: 'cover', icon: ai.icon || '⭐', title: g.name, subtitle: ai.tagline || g.description || '' },
+        { type: 'explain', kicker: 'Ne işe yarar?', icon: '💡', text: ai.explain || firstParagraph(readme) || g.description || g.name },
+        { type: 'cards', title: 'Neler yapabiliyor?', items: ai.features && ai.features.length ? ai.features : feats.map((f, i) => `${['⚙️', '📜', '🍴', '🕒'][i] || '✦'} ${f}`) },
+        { type: 'stat', value: stars, title: 'GitHub yıldızı', text: feats[0] || '' },
         ...steps,
         { type: 'cta', title: 'Yıldız ver ⭐', text: `github.com/${g.full_name}` },
       ],

@@ -44,6 +44,7 @@ jobs:
       - name: Yeni post üret (kuyruk boşsa GitHub'dan otomatik proje seç)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node scripts/generate.js
 
       - name: Render

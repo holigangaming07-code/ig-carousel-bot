@@ -1,12 +1,14 @@
 const $ = (id) => document.getElementById(id);
 const TYPES = {
-  cover: { label: 'Kapak', fields: [['badge', 'Rozet'], ['title', 'Başlık'], ['subtitle', 'Alt başlık', 'area']], init: { title: 'Proje Adı', subtitle: 'Tek cümlelik açıklama' } },
+  cover: { label: 'Kapak', fields: [['badge', 'Rozet'], ['icon', 'Emoji'], ['title', 'Başlık'], ['subtitle', 'Alt başlık', 'area']], init: { title: 'Proje Adı', subtitle: 'Tek cümlelik açıklama' } },
   step: { label: 'Adım', fields: [['number', 'Numara'], ['title', 'Başlık'], ['code', 'Kod', 'code'], ['text', 'Not', 'area']], init: { number: 1, title: 'Adım', code: 'npm install' } },
   code: { label: 'Kod', fields: [['title', 'Başlık'], ['code', 'Kod', 'code'], ['text', 'Not', 'area']], init: { title: 'Örnek', code: 'proje run' } },
   tip: { label: 'İpucu', fields: [['title', 'Başlık'], ['text', 'Metin', 'area']], init: { title: 'İpucu', text: 'Buraya ipucu yaz.' } },
   list: { label: 'Liste', fields: [['title', 'Başlık'], ['items', 'Maddeler (her satır bir madde)', 'list']], init: { title: 'Özellikler', items: ['Madde 1', 'Madde 2'] } },
   cta: { label: 'Çağrı', fields: [['title', 'Başlık'], ['text', 'Metin', 'area']], init: { title: 'Yıldız ver ⭐', text: 'github.com/kullanici/proje' } },
   stat: { label: 'Rakam ✦', fields: [['value', 'Büyük rakam'], ['title', 'Başlık'], ['text', 'Not', 'area']], init: { value: '1.2k', title: 'GitHub yıldızı' } },
+  explain: { label: 'Açıklama ✦', fields: [['kicker', 'Etiket'], ['icon', 'Emoji'], ['text', 'Metin', 'area']], init: { kicker: 'Ne işe yarar?', icon: '💡', text: 'Projenin ne yaptığını burada anlat.' } },
+  cards: { label: 'Kartlar ✦', fields: [['title', 'Başlık'], ['items', 'Kartlar (her satır: emoji metin)', 'list']], init: { title: 'Neler yapabiliyor?', items: ['⚡ Hızlı', '🔒 Güvenli'] } },
   quote: { label: 'Alıntı ✦', fields: [['text', 'Alıntı', 'area'], ['author', 'Yazar']], init: { text: 'Basit olan kazanır.', author: 'Anonim' } },
 };
 const THEMES = [
