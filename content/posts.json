@@ -24,7 +24,7 @@
       ]
     }
   ],
-  "minStars": 12345,
+  "minStars": 10000,
   "brand": {
     "name": "Repo Rehberi",
     "handle": "@reporehberi",
@@ -43,7 +43,7 @@
     {
       "id": "en",
       "lang": "en",
-      "enabled": true,
+      "enabled": false,
       "brand": {
         "name": "Repo Guide",
         "handle": "@repoguide"
