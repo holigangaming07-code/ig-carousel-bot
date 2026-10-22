@@ -109,6 +109,11 @@ async function publish(data, post, c) {
       await publish(data, post, c);
     } catch (e) {
       errors.push(`${post.id}: ${e.message}`);
+      // gerçek bir API hatası: 3 kez üst üste başarısız olan post kuyruğu kilitlemesin diye kenara alınır
+      post.failCount = (post.failCount || 0) + 1;
+      post.lastError = String(e.message).slice(0, 200);
+      if (post.failCount >= 3) { post.failed = true; console.warn(`${post.id} 3 kez başarısız oldu, kuyruktan çıkarıldı (failed).`); }
+      savePosts(data);
     }
   }
   if (errors.length) fail(errors.join('\n'));

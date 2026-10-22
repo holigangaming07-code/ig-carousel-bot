@@ -90,7 +90,7 @@ jobs:
         run: node scripts/publish.js
 
       - name: posts.json'u commit et
-        if: env.DRY_RUN != 'true'
+        if: always() && env.DRY_RUN != 'true'
         run: |
           git add content/posts.json
           if git diff --cached --quiet; then

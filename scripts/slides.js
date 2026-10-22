@@ -65,14 +65,16 @@
   const arr = (a) => (Array.isArray(a) ? a : []);
   const stepText = (t) => String((t && t.text) || t || '').replace(/^[\s\u20E3\uFE0F0-9.)\-]+(?=\S)/u, '');
   // yıldız seviyesine göre arka plan tonu (0-999 gri, 1K yeşil, 10K mavi (özgün), 50K mor, 100K+ altın)
-  const TONES = ['saturate(.12) brightness(1.12)', 'hue-rotate(-105deg) saturate(1.05)', 'none', 'hue-rotate(38deg)', 'hue-rotate(160deg) saturate(1.3)'];
+  const TONES = ['saturate(.12) brightness(1.12)', 'hue-rotate(-105deg) saturate(1.05)', 'none', 'hue-rotate(38deg)', 'hue-rotate(188deg) saturate(1.2) brightness(1.12)'];
   const CY = '#43d9ff';
   const I18N = {
     tr: { stars: 'YILDIZ', fork: 'FORK', offers: 'Ne sunuyor?', examples: 'Arama örnekleri', noteT: 'Önemli not', search: 'ARA', locale: 'tr-TR',
       swipe: 'Kaydır ve detayları gör.', nice: 'harika bir açık kaynak proje', tryIt: 'Projeyi kendi bilgisayarında denemek istersen.', then: 'Sonra: ', readme: "Detaylar için README'ye bak.",
+      dl: { adv: [{ title: 'Yerelde incele', text: 'Tüm içeriklere bilgisayarından rahatça göz at.' }, { title: 'Offline kullan', text: 'İnternet olmadan da erişebilirsin.' }, { title: 'Katkı ver', text: 'Hataları düzelt, yeni şeyler ekle.' }], alt: { title: 'ZIP olarak indir', text: 'GitHub sayfasında Code > Download ZIP seçeneğiyle tek tıkla indirebilirsin.' } },
       written: (l) => (l ? `${l} ile yazıldı` : 'Açık kaynak'), licensed: (l) => `${l} lisanslı`, forked: (n) => `${n} kez fork edildi`, updated: (d) => `Son güncelleme: ${d}`, address: 'Adres' },
     en: { stars: 'STARS', fork: 'FORKS', offers: 'What it offers', examples: 'Search examples', noteT: 'Important note', search: 'SEARCH', locale: 'en-US',
       swipe: 'Swipe to see the details.', nice: 'a great open-source project', tryIt: 'If you want to try it on your own computer.', then: 'Then: ', readme: 'See the README for details.',
+      dl: { adv: [{ title: 'Explore locally', text: 'Browse everything comfortably on your computer.' }, { title: 'Use offline', text: 'Access it even without internet.' }, { title: 'Contribute', text: 'Fix bugs and add new things.' }], alt: { title: 'Download as ZIP', text: 'Use Code > Download ZIP on the GitHub page for a one-click download.' } },
       written: (l) => (l ? `Written in ${l}` : 'Open source'), licensed: (l) => `${l} licensed`, forked: (n) => `Forked ${n} times`, updated: (d) => `Last update: ${d}`, address: 'Link' },
   };
   const tx = (s) => I18N[s.lang] || I18N.tr;
@@ -88,6 +90,15 @@
     return lines;
   }
   const cwOf = (f) => (f.mono ? 0.62 : f.up ? 0.76 : f.fw >= 800 ? 0.63 : f.fw >= 700 ? 0.605 : f.fw >= 600 ? 0.585 : 0.565);
+  // en küçük boyutta bile sığmayan metni sözcük sınırında keser ("…")
+  function clipTo(text, f, fs, ratio) {
+    const t = String(text);
+    const room = (x) => linesFor(x, f.w, fs, ratio) * f.lh * fs <= f.h + 1;
+    if (room(t)) return t;
+    const w = t.split(/\s+/);
+    while (w.length > 1) { w.pop(); const x = w.join(' ').replace(/[,;:.\-–]+$/, '') + '…'; if (room(x)) return x; }
+    return t;
+  }
   function fit1(text, f) {
     for (let fs = f.fs; fs >= f.mn; fs--) if (linesFor(text, f.w, fs, cwOf(f)) * f.lh * fs <= f.h + 1) return fs;
     return f.mn;
@@ -107,16 +118,19 @@
     const out = [];
     const base = (f, fs, inner, extra) => `<div class="fx${f.grad ? ' grad' : ''}${f.nw ? ' nw' : ''}" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fs}px;color:${f.c};font-weight:${f.fw};text-align:${f.al};line-height:${f.lh};${f.mono ? "font-family:Consolas,'DejaVu Sans Mono',monospace;" : ''}${f.up ? 'text-transform:uppercase;letter-spacing:.5px;' : ''}${f.rot ? `transform:rotate(${f.rot}deg);` : ''}${extra || ''}"><div>${inner}</div></div>`;
     // tek parça metin
-    const T = (k, text) => { const f = L.f[k]; if (f && text != null && text !== '') out.push(base(f.up ? Object.assign({ nw: 1 }, f) : f, fit1(text, f), esc(text))); };
+    const T = (k, text) => { const f = L.f[k]; if (!f || text == null || text === '') return; const fs = fit1(text, f); out.push(base(f.up ? Object.assign({ nw: 1 }, f) : f, fs, esc(f.up ? text : clipTo(text, f, fs, cwOf(f))))); };
     // başlık + açıklama (iki renk)
-    const T2 = (k, a, b) => { const f = L.f[k]; if (!f || !a) return; const fs = fit2(a, b, f); out.push(base(f, fs, `<b style="display:block">${esc(a)}</b>${b ? `<span style="display:block;font-weight:500;font-size:.74em;line-height:1.2;color:${f.c2 || '#b9c6e6'}">${esc(b)}</span>` : ''}`)); };
+    const T2 = (k, a, b) => { const f = L.f[k]; if (!f || !a) return; const fs = fit2(a, b, f); if (b) { const room = f.h - linesFor(a, f.w, fs, cwOf(f)) * f.lh * fs; const g2 = Object.assign({}, f, { h: Math.max(0, room), lh: 1.2 }); b = clipTo(b, g2, fs * 0.74, 0.55); } out.push(base(f, fs, `<b style="display:block">${esc(a)}</b>${b ? `<span style="display:block;font-weight:500;font-size:.74em;line-height:1.2;color:${f.c2 || '#b9c6e6'}">${esc(b)}</span>` : ''}`)); };
     // renkli iki parçalı tek satır (ör. sayı + etiket)
     const R = (k, parts, size, sub) => { const f = Object.assign({ nw: 1 }, L.f[k]); if (!L.f[k]) return; const len = parts.reduce((n, p) => n + String(p[0]).length, 0); const fs = size || Math.max(f.mn, Math.min(f.fs, Math.floor(f.w / (len * 0.6)))); out.push(base(f, fs, parts.map((p) => `<span style="color:${p[1] || f.c}">${esc(p[0])}</span>`).join('') + (sub ? `<div style="font-size:${Math.round(fs * 0.58)}px;font-weight:500;color:#cfd8ee">${esc(sub)}</div>` : ''))); };
     draw({ T, T2, R, L, cats: () => arr(d.categories).slice(0, 5).forEach((t, i) => T(`cat${i}`, t)) });
     const tier = Math.max(0, Math.min(4, Number.isInteger(d.tier) ? d.tier : 2));
     const r = L.legend[tier];
     const glow = r ? `<div class="lg" style="left:${r[0] - 3}px;top:${r[1] - 3}px;width:${r[2] + 6}px;height:${r[3] + 6}px"></div>` : '';
-    return `<div class="rvs" style="filter:${TONES[tier]}"><div class="rvbg" style="background-image:url('${BG(L.bg, lang)}')"></div>${out.join('')}${glow}</div>`;
+    // ton filtresi seviye panelindeki yıldız renklerini bozmasın diye satırlar filtresiz kopyayla geri çizilir
+    const img = BG(L.bg, lang);
+    const rows = tier === 2 ? '' : L.legend.map((q) => `<div class="lgr" style="left:${q[0]}px;top:${q[1]}px;width:${q[2]}px;height:${q[3]}px;background-image:url('${img}');background-position:-${q[0]}px -${q[1]}px"></div>`).join('');
+    return `<div class="rvs"><div class="tn" style="filter:${TONES[tier]}"><div class="rvbg" style="background-image:url('${img}')"></div>${out.join('')}</div>${rows}${glow}</div>`;
   }
 
   const rv = {
@@ -251,24 +265,32 @@
       g.pushed_at ? { icon: '🕒', title: t.updated(g.pushed_at.slice(0, 10)), text: '' } : null,
     ].filter(Boolean);
     const cmds = installCommands(readme);
+    const cmd = `git clone ${g.html_url}.git`;
     const cover = { type: 'rvCover', ...base, title: g.name, tagline: ai.tagline || desc, stars: nf(g.stargazers_count), date, forks: nf(g.forks_count), promise: ai.promise || desc };
-    const slides = arr(ai.features).length
+    const n = (a, k) => arr(a).length >= k;
+    const dl = I18N[lang].dl;
+    const download = (extra) => ({ type: 'rvDownload', ...base, intro: extra.intro, command: cmd, advantages: n(extra.adv, 3) ? extra.adv : dl.adv, alt: dl.alt, note: extra.note });
+    const useAi = ai && ai.safe !== false && n(ai.features, 4) && ai.summary && ai.description;
+    const slides = useAi
       ? [
         cover,
-        { type: 'rvExplain', ...base, summary: ai.summary, description: ai.description, features: ai.features, extra: ai.extra },
-        { type: 'rvAudience', ...base, intro: ai.audience_intro, audience: ai.audience, bottom: ai.audience_bottom },
-        { type: 'rvSetup', ...base, intro: ai.setup_intro, steps: ai.setup_steps, notes: ai.setup_notes, bottom: ai.setup_bottom },
-        { type: 'rvSections', ...base, title: ai.sections_title, intro: ai.sections_intro, sections: ai.sections, note: ai.sections_note, bottom: ai.sections_bottom },
-        { type: 'rvUsage', ...base, intro: ai.usage_intro, steps: ai.usage_steps, link: ai.usage_link, examples: ai.usage_examples, pageTitle: ai.usage_title || g.name, input: ai.usage_input, results: ai.usage_results },
-        { type: 'rvDownload', ...base, intro: ai.download_intro, command: ai.download_command || cmds[0] || `git clone ${g.html_url}`, advantages: ai.download_advantages, alt: ai.download_alt, note: ai.download_note },
+        { type: 'rvExplain', ...base, summary: ai.summary, description: ai.description, features: ai.features,
+          extra: ai.extra && ai.extra.title ? ai.extra : { icon: '🕒', title: t.updated(g.pushed_at ? g.pushed_at.slice(0, 10) : date), text: t.forked(nf(g.forks_count)) } },
+        // sadece README'den gerçekten doldurulabilen slaytlar eklenir
+        ...(n(ai.audience, 4) && ai.audience.every((x) => n(x.needs, 3)) ? [{ type: 'rvAudience', ...base, intro: ai.audience_intro, audience: ai.audience, bottom: ai.audience_bottom }] : []),
+        ...(n(ai.setup_steps, 3) && n(ai.setup_notes, 3) ? [{ type: 'rvSetup', ...base, intro: ai.setup_intro, steps: ai.setup_steps, notes: ai.setup_notes, bottom: ai.setup_bottom }] : []),
+        ...(ai.has_sections === true && n(ai.sections, 3) && ai.sections.every((x) => n(x.items, 4)) ? [{ type: 'rvSections', ...base, title: ai.sections_title, intro: ai.sections_intro, sections: ai.sections, note: ai.sections_note, bottom: ai.sections_bottom }] : []),
+        ...(ai.has_search_site === true && ai.usage_link && !/github\.com/i.test(ai.usage_link) && n(ai.usage_steps, 3) && n(ai.usage_results, 4) && n(ai.usage_examples, 4)
+          ? [{ type: 'rvUsage', ...base, intro: ai.usage_intro, steps: ai.usage_steps, link: ai.usage_link, examples: ai.usage_examples, pageTitle: ai.usage_title || g.name, input: ai.usage_input, results: ai.usage_results }] : []),
+        download({ intro: ai.download_intro, adv: ai.download_advantages, note: ai.download_note }),
         { type: 'rvFinal', ...base, intro: ai.final_intro, rows: [
           { icon: '💻', k: 'Proje:', v: g.name }, { icon: '⭐', k: 'Yıldız:', v: nf(g.stargazers_count) },
-          { icon: '🎯', k: 'Amaç:', v: ai.final_purpose }, { icon: '⚙️', k: 'Kurulum:', v: ai.final_install }, { icon: '📝', k: 'Ekstra:', v: ai.final_extra }] },
+          { icon: '🎯', k: 'Amaç:', v: ai.final_purpose || ai.summary }, { icon: '⚙️', k: 'Kurulum:', v: ai.final_install || (cmds[0] ? cmds[0] : cmd) }, { icon: '📝', k: 'Ekstra:', v: ai.final_extra || t.updated(g.pushed_at ? g.pushed_at.slice(0, 10) : date) }] },
       ]
       : [
         cover,
-        { type: 'rvExplain', ...base, summary: desc, description: firstParagraph(readme) || desc || g.name, features: feats },
-        { type: 'rvDownload', ...base, intro: t.tryIt, command: cmds[0] || `git clone ${g.html_url}`, note: cmds[1] ? `${t.then}${cmds[1]}` : t.readme },
+        { type: 'rvExplain', ...base, summary: desc, description: firstParagraph(readme) || desc || g.name, features: feats, extra: { icon: '🕒', title: t.updated(g.pushed_at ? g.pushed_at.slice(0, 10) : date), text: t.forked(nf(g.forks_count)) } },
+        download({ intro: t.tryIt, adv: null, note: cmds[0] ? `${t.then}${cmds[0]}` : t.readme }),
         { type: 'rvFinal', ...base, rows: [{ icon: '💻', k: 'Proje:', v: g.name }, { icon: '⭐', k: 'Yıldız:', v: nf(g.stargazers_count) }, { icon: '🍴', k: 'Fork:', v: nf(g.forks_count) }, { icon: '🔗', k: `${t.address}:`, v: `github.com/${g.full_name}` }] },
       ];
     return {

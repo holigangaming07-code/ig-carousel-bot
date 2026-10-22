@@ -88,3 +88,5 @@ h1, .bignum { background: linear-gradient(100deg, var(--fg) 20%, var(--accent) 1
 .fx.grad > div { background: linear-gradient(90deg, #fff 0%, #e6fbff 28%, #5fe6ff 58%, #c58bff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: -2px; }
 .lg { position: absolute; border: 3px solid rgba(255,255,255,.95); border-radius: 15px; box-shadow: 0 0 22px 6px rgba(255,255,255,.5), inset 0 0 16px rgba(255,255,255,.22); pointer-events: none; }
 .fx.nw > div { white-space: nowrap; overflow-wrap: normal; }
+.tn { position: absolute; inset: 0; }
+.lgr { position: absolute; background-size: 1122px 1402px; border-radius: 14px; pointer-events: none; }

@@ -20,7 +20,7 @@ function savePosts(data) {
 // yayınlanmayı bekleyen tüm postlar (POST_ID verilirse yalnızca o)
 function pendingPosts(data) {
   const wanted = process.env.POST_ID;
-  const list = wanted ? data.posts.filter((p) => p.id === wanted) : data.posts.filter((p) => !p.published && !p.draft);
+  const list = wanted ? data.posts.filter((p) => p.id === wanted) : data.posts.filter((p) => !p.published && !p.draft && !p.failed);
   for (const post of list) {
     if (!Array.isArray(post.slides) || post.slides.length < 2 || post.slides.length > 10) {
       fail(`"${post.id}" postu 2-10 slayt içermeli (Instagram carousel sınırı).`);

@@ -282,11 +282,8 @@ function renderAuto() {
     <label>Yükselen: son kaç gün<input id="sRDays" type="number" value="${val('risingDays', 60)}"></label>
     <label>Konular (virgülle, boşsa hepsi)<input id="sTopics" value="${Slides.esc((val('topics', []) || []).join(', '))}"></label>
     <label class="full">Kendi seçtiklerim (sahip/repo, her satır bir tane; bot önce bunları paylaşır)<textarea id="sRepos" rows="3">${Slides.esc((val('repos', []) || []).join('\n'))}</textarea></label>
-    <label>Türkçe sayfa adı<input id="sBrand" value="${Slides.esc(acc('tr').brand.name)}"></label>
-    <label>Türkçe kullanıcı adı<input id="sHandle" value="${Slides.esc(acc('tr').brand.handle)}"></label>
     <label class="full chk"><input type="checkbox" id="sEn" ${acc('en').enabled ? 'checked' : ''}> İngilizce hesap da etkin (her proje için İngilizce post üret ve paylaş)</label>
-    <label>İngilizce sayfa adı<input id="sBrandEn" value="${Slides.esc(acc('en').brand.name)}"></label>
-    <label>İngilizce kullanıcı adı<input id="sHandleEn" value="${Slides.esc(acc('en').brand.handle)}"></label>
+    <div class="note full">Sayfa adı ve kullanıcı adı şablon resimlerinin içinde yazılıdır; değiştirmek için şablon resimleri yenilenmelidir.</div>
     <div class="note full ${a.plates && a.plates.en ? '' : 'warn'}">${a.plates && a.plates.en ? 'İngilizce şablon resimleri hazır.' : 'İngilizce şablon resimleri (template/rv/en) henüz yok: bot İngilizce postu şimdilik atlar.'}</div>
   </div>
   <div class="row2" style="margin-top:12px"><button data-act="push" class="primary">💾 Kaydet ve GitHub'a gönder</button><button data-act="pull">GitHub'dan al</button></div>
@@ -312,8 +309,7 @@ function readSettings() {
   data.topics = $('sTopics').value.split(',').map((t) => t.trim()).filter(Boolean);
   data.repos = $('sRepos').value.split('\n').map((t) => t.trim()).filter(Boolean);
   const tr = accOf('tr'), en = accOf('en');
-  tr.brand.name = $('sBrand').value.trim() || 'Repo Rehberi'; tr.brand.handle = $('sHandle').value.trim() || '@reporehberi';
-  en.enabled = $('sEn').checked; en.brand.name = $('sBrandEn').value.trim() || 'Repo Guide'; en.brand.handle = $('sHandleEn').value.trim() || '@repoguide';
+  en.enabled = $('sEn').checked;
 }
 
 document.addEventListener('click', async (e) => {

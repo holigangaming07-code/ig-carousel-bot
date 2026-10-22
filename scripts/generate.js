@@ -45,11 +45,17 @@ const TITLES = {
 
 async function aiSummary(g, readme, lang = 'tr') {
   const en = lang === 'en';
+  if (String(readme).trim().length < 300) { console.warn(`README çok kısa (${g.full_name}), uydurma riski nedeniyle yapay zeka özeti atlandı.`); return null; }
   const prompt = `Aşağıdaki GitHub projesini 8 slaytlık bir Instagram carousel için ${en ? 'simple, fluent, friendly ENGLISH ile anlat (TÜM değerler İngilizce olmalı, tek kelime Türkçe yazma)' : 'sade, akıcı, samimi TÜRKÇE ile anlat'}. SADECE geçerli JSON döndür, başka metin yazma.
 Slayt başlıkları sabittir: ${TITLES[lang] || TITLES.tr}. İçeriği bu başlıklara uyacak şekilde yaz (proje uygulama ise 5. slaytta ana bölümlerini, 6. slaytta dokümantasyon/komutlara nasıl ulaşılacağını anlat).
+GÜVENLİK: Proje korsan/crack yazılım, kötü amaçlı yazılım (malware, stealer, botnet, ransomware), DDoS aracı, sızdırılmış veri, yetişkin içerik, nefret veya taciz ile ilgiliyse "safe": false yaz ve diğer alanları boş bırak.
+DÜRÜSTLÜK: Sadece README'de GERÇEKTEN olan şeyleri yaz. "has_search_site": true yalnızca README'de insanların arama yapabildiği gerçek bir web sitesi/sayfa anılıyorsa. "has_sections": true yalnızca README'de gerçekten adı geçen 3 farklı bölüm/klasör/modül varsa. Aksi halde false yaz ve ilgili alanları (usage_*, sections*) boş bırak. Asla uydurma arama sonucu, dosya adı veya komut yazma.
 Kurallar: her metin kısa olsun (belirtilen karakter sınırını AŞMA). "icon" alanları TEK emoji olsun. Adım metinlerinin başına numara veya 1️⃣ gibi emoji koyma. Bilmediğin şeyi uydurma; README'de olmayan komut/adres yazma. Proje bir uygulama değil de liste/doküman ise kurulum ve indirme kısımlarını buna göre dürüstçe yaz.
 JSON şeması:
 {
+ "safe": true,
+ "has_search_site": false,
+ "has_sections": false,
  "tagline": "projeyi anlatan tek cümle, en fazla 60 karakter",
  "hook": "dikkat çekici tek cümlelik caption girişi",
  "summary": "projenin ana faydası, 1 cümle, en fazla 70 karakter",
@@ -98,6 +104,7 @@ ${readme.slice(0, 7000)}`;
     const text = await llm(prompt);
     if (!text) throw new Error('yapay zeka anahtarı/servisi yok veya boş yanıt');
     const j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+    if (j.safe === false) return { safe: false };
     if (!j.summary || !Array.isArray(j.features) || !j.features.length) throw new Error('eksik alan');
     return j;
   } catch (e) {
@@ -106,9 +113,16 @@ ${readme.slice(0, 7000)}`;
   }
 }
 
+const BLOCK = /\b(crack(ed|s)?|keygen|warez|nsfw|porn\w*|hentai|onlyfans|leak(ed|s)?|pirat(e|ed|es)|torrent\w*|ddos|botnet|ransomware|stealer|keylogger|exploit-kit|nazi)\b/i;
+function blocked(g, data) {
+  const text = [g.name, g.description, ...(g.topics || [])].join(' ');
+  if (BLOCK.test(text)) return true;
+  return (data.blockKeywords || []).some((k) => k && text.toLowerCase().includes(String(k).toLowerCase()));
+}
+
 async function findRepo(data, used) {
   const own = (data.repos || []).filter((r) => !used.has(r.toLowerCase()));
-  if (own.length) return gh(`/repos/${own[0]}`);
+  if (own.length) return gh(`/repos/${own[0]}`);  // kendi seçtiğin repolara filtre uygulanmaz
 
   const rising = process.env.MODE === 'rising';
   const topic = data.topics && data.topics.length ? `topic:${pick(data.topics)} ` : '';
@@ -120,7 +134,7 @@ async function findRepo(data, used) {
     : `${topic}stars:>${data.minStars || 10000} pushed:>${since} archived:false`);
   const { items } = await gh(`/search/repositories?q=${q}&sort=stars&order=desc&per_page=100`);
   // paylaşılmamış, açıklamalı ve lisanslı projeler arasından en yüksek yıldızlı 15 tanesinden biri
-  const fresh = (items || []).filter((g) => g.description && (rising || g.license) && !used.has(g.full_name.toLowerCase())).slice(0, 15);
+  const fresh = (items || []).filter((g) => g.description && (rising || g.license) && !used.has(g.full_name.toLowerCase()) && !blocked(g, data)).slice(0, 15);
   if (!fresh.length) throw new Error('Uygun yeni proje bulunamadı (minStars değerini düşür).');
   return pick(fresh);
 }
@@ -136,23 +150,35 @@ const hasPlates = (lang) => fs.existsSync(path.join(ROOT, 'template', 'rv', lang
     return false;
   });
   if (!accounts.length) { console.log('Etkin hesap yok.'); return; }
-  const pending = new Set(data.posts.filter((p) => !p.published && !p.draft).map((p) => p.source || p.id));
+  const pending = new Set(data.posts.filter((p) => !p.published && !p.draft && !p.failed).map((p) => p.source || p.id));
   if (pending.size >= (data.minQueue || 1) && !process.env.FORCE) {
     console.log(`Kuyrukta ${pending.size} yayınlanmamış proje var, yeni üretilmedi.`);
     return;
   }
   const used = new Set(data.posts.map((p) => (p.source || '').toLowerCase()).filter(Boolean));
-  const g = await findRepo(data, used);
-
-  let readme = '';
-  try { readme = await gh(`/repos/${g.full_name}/readme`, 'application/vnd.github.raw+json'); } catch (_) { /* README yoksa klon adımına düşer */ }
+  const first = accounts[0];
+  let g, readme, firstAi;
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    g = await findRepo(data, used);
+    readme = '';
+    try { readme = await gh(`/repos/${g.full_name}/readme`, 'application/vnd.github.raw+json'); } catch (_) { /* README yoksa klon adımına düşer */ }
+    firstAi = await aiSummary(g, readme, first.lang);
+    if (firstAi && firstAi.safe === false) {
+      console.warn(`${g.full_name} uygunsuz bulundu, başka proje seçiliyor (${attempt}/6).`);
+      used.add(g.full_name.toLowerCase());
+      g = null;
+      continue;
+    }
+    break;
+  }
+  if (!g) throw new Error('6 denemede uygun proje bulunamadı.');
 
   const slug = g.name.toLowerCase().replace(/[^\w.-]/g, '-');
   let baseId = slug;
   for (let n = 2; data.posts.some((p) => p.id === baseId || p.id.startsWith(`${baseId}-`)); n++) baseId = `${slug}-${n}`;
   for (const acc of accounts) {
     const id = acc.lang === 'tr' ? baseId : `${baseId}-${acc.lang}`;
-    const post = postFromRepo(g, id, readme, undefined, await aiSummary(g, readme, acc.lang), { lang: acc.lang, account: acc.id });
+    const post = postFromRepo(g, id, readme, undefined, acc === first ? firstAi : await aiSummary(g, readme, acc.lang), { lang: acc.lang, account: acc.id });
     data.posts.push(post);
     console.log(`✔ Yeni post üretildi: ${post.id} (${g.full_name}, ${acc.id}, ${post.slides.length} slayt)`);
   }
