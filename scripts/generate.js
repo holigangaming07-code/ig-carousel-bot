@@ -17,12 +17,12 @@ async function findRepo(data, used) {
   const own = (data.repos || []).filter((r) => !used.has(r.toLowerCase()));
   if (own.length) return gh(`/repos/${own[0]}`);
 
-  const topics = data.topics && data.topics.length ? data.topics : ['cli', 'developer-tools', 'automation', 'self-hosted', 'productivity', 'devops'];
-  const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
-  const q = encodeURIComponent(`topic:${pick(topics)} stars:>1500 pushed:>${since} archived:false`);
-  const { items } = await gh(`/search/repositories?q=${q}&sort=stars&order=desc&per_page=40`);
-  const fresh = (items || []).filter((g) => g.description && g.license && !used.has(g.full_name.toLowerCase()));
-  if (!fresh.length) throw new Error('Uygun yeni proje bulunamadı (topics listesini genişlet).');
+  const topic = data.topics && data.topics.length ? `topic:${pick(data.topics)} ` : '';
+  const since = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10);
+  const q = encodeURIComponent(`${topic}stars:>${data.minStars || 10000} pushed:>${since} archived:false`);
+  const { items } = await gh(`/search/repositories?q=${q}&sort=stars&order=desc&per_page=100`);
+  // paylaşılmamış, açıklamalı ve lisanslı projeler arasından en yüksek yıldızlı 15 tanesinden biri
+  const fresh = (items || []).filter((g) => g.description && g.license && !used.has(g.full_name.toLowerCase())).slice(0, 15);  if (!fresh.length) throw new Error('Uygun yeni proje bulunamadı (minStars değerini düşür).');
   return pick(fresh);
 }
 

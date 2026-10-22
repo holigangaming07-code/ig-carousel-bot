@@ -2,14 +2,38 @@
   "repo": "kullanici/proje",
   "branch": "main",
   "minQueue": 1,
-  "topics": [
-    "cli",
-    "developer-tools",
-    "automation",
-    "self-hosted",
-    "productivity",
-    "devops"
-  ],
+  "topics": [],
   "repos": [],
-  "posts": []
+  "posts": [
+    {
+      "id": "yeni-1",
+      "published": false,
+      "caption": "",
+      "slides": [
+        {
+          "type": "cover",
+          "title": "Proje Adı",
+          "subtitle": "Tek cümlelik açıklama"
+        },
+        {
+          "type": "step",
+          "number": 1,
+          "title": "Adım",
+          "code": "npm install"
+        },
+        {
+          "type": "code",
+          "title": "Örnek",
+          "code": "proje run"
+        },
+        {
+          "type": "cta",
+          "title": "Yıldız ver ⭐",
+          "text": "github.com/kullanici/proje"
+        }
+      ],
+      "theme": "sunset"
+    }
+  ],
+  "minStars": 10000
 }
