@@ -19,7 +19,7 @@ const slide = () => post().slides[si];
 
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2200); }
 function status(msg, cls = '') { const s = $('status'); s.textContent = msg; s.className = 'status ' + cls; }
-const html = (i, p = post()) => Slides.fill(tpl, css, p.slides[i], i, p.slides.length, p.theme);
+const html = (i, p = post()) => Slides.fill(tpl, css, p.slides[i], i, p.slides.length, p.theme, data.brand);
 
 function save() {
   status('Kaydediliyor…');
@@ -61,7 +61,7 @@ function renderPosts() {
   const l = $('postList'); l.innerHTML = '';
   data.posts.forEach((p, i) => {
     const d = document.createElement('div'); d.className = 'post' + (i === pi ? ' on' : '');
-    d.innerHTML = `<span>${Slides.esc(p.id)}</span><span class="pill ${p.published ? 'pub' : ''}">${p.published ? 'yayında' : 'taslak'}</span>`;
+    d.innerHTML = `<span>${Slides.esc(p.id)}</span><span class="pill ${p.published ? 'pub' : ''}">${p.published ? 'yayında' : p.draft ? 'taslak' : 'sırada'}</span>`;
     d.onclick = () => { pi = i; si = 0; refresh(); };
     l.appendChild(d);
   });
@@ -86,7 +86,7 @@ function renderFields() {
 
 function renderPostMeta() {
   const p = post();
-  $('postId').value = p.id; $('postPub').checked = !!p.published; $('postCaption').value = p.caption || '';
+  $('postId').value = p.id; $('postPub').checked = !!p.published; $('postDraft').checked = !!p.draft; $('postCaption').value = p.caption || '';
   const n = (p.caption || '').length; $('capCount').textContent = `${n}/2200`; $('capCount').className = 'count' + (n > 2200 ? ' over' : '');
   $('themes').innerHTML = '';
   THEMES.forEach(([id, name, c]) => {
@@ -106,7 +106,7 @@ function refresh() {
 
 function blankPost(id) {
   id = id || 'yeni-' + (data.posts.length + 1);
-  return { id, published: false, caption: '', slides: [
+  return { id, published: false, draft: true, caption: '', slides: [
     { type: 'cover', ...TYPES.cover.init }, { type: 'cta', ...TYPES.cta.init }] };
 }
 const uniqueId = (base) => { let id = base, n = 2; while (data.posts.some((p) => p.id === id)) id = base + '-' + n++; return id; };
@@ -155,9 +155,12 @@ async function exportAll() {
 
 function bind() {
   $('postId').oninput = (e) => { post().id = e.target.value.trim(); renderPosts(); save(); };
+  $('postDraft').onchange = (e) => { if (e.target.checked) post().draft = true; else delete post().draft; renderPosts(); save(); };
   $('postPub').onchange = (e) => { post().published = e.target.checked; renderPosts(); save(); };
   $('postCaption').oninput = (e) => { post().caption = e.target.value; renderPostMeta(); $('postCaption').focus(); save(); };
   $('cfgRepo').oninput = (e) => { data.repo = e.target.value.trim(); save(); };
+  $('brandName').oninput = (e) => { (data.brand ||= {}).name = e.target.value; refresh(); save(); };
+  $('brandHandle').oninput = (e) => { (data.brand ||= {}).handle = e.target.value; refresh(); save(); };
   $('cfgBranch').oninput = (e) => { data.branch = e.target.value.trim(); save(); };
   $('btnNewPost').onclick = () => { data.posts.push(blankPost(uniqueId('yeni'))); pi = data.posts.length - 1; si = 0; refresh(); save(); };
   $('btnGh').onclick = fromGithub;
@@ -185,6 +188,7 @@ function bind() {
 
 (async () => {
   [data, css, tpl] = await Promise.all([fetch('/api/posts').then((r) => r.json()), fetch('/theme.css').then((r) => r.text()), fetch('/slide.html').then((r) => r.text())]);
+  $('brandName').value = (data.brand || {}).name || 'Repo Rehberi'; $('brandHandle').value = (data.brand || {}).handle || '@reporehberi';
   $('cfgRepo').value = data.repo || ''; $('cfgBranch').value = data.branch || '';
   bind(); refresh(); status('Hazır');
   setInterval(() => fetch('/api/ping').catch(() => {}), 4000); fetch('/api/ping');

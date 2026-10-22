@@ -29,7 +29,7 @@ async function findRepo(data, used) {
 
 (async () => {
   const data = loadPosts();
-  const pending = data.posts.filter((p) => !p.published).length;
+  const pending = data.posts.filter((p) => !p.published && !p.draft).length;
   if (pending >= (data.minQueue || 1) && !process.env.FORCE) {
     console.log(`Kuyrukta ${pending} yayınlanmamış post var, yeni üretilmedi.`);
     return;

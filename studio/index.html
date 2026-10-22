@@ -25,6 +25,9 @@
       <input id="ghRepo" placeholder="sahip/repo  (ör. vercel/next.js)">
       <button id="btnGh" class="wide">✨ Carousel üret</button>
     </div>
+    <div class="sec-title" style="margin-top:16px">Sayfa kimliği</div>
+    <label>Sayfa adı <input id="brandName"></label>
+    <label>Kullanıcı adı <input id="brandHandle"></label>
     <label class="repo">Repo (yayın için)
       <input id="cfgRepo"> </label>
     <label class="repo">Branch <input id="cfgBranch"></label>
@@ -44,6 +47,7 @@
     <label>Tema
       <div id="themes" class="themes"></div>
     </label>
+    <label class="chk"><input type="checkbox" id="postDraft"> Taslak (bot paylaşmasın)</label>
     <label class="chk"><input type="checkbox" id="postPub"> Yayınlandı olarak işaretle</label>
     <label>Açıklama (caption) <span id="capCount" class="count"></span>
       <textarea id="postCaption" rows="6"></textarea></label>

@@ -22,7 +22,7 @@ function pickPost(data) {
   const wanted = process.env.POST_ID;
   const post = wanted
     ? data.posts.find((p) => p.id === wanted)
-    : data.posts.find((p) => !p.published);
+    : data.posts.find((p) => !p.published && !p.draft);
   if (!post) return null;
   if (!Array.isArray(post.slides) || post.slides.length < 2 || post.slides.length > 10) {
     fail(`"${post.id}" postu 2-10 slayt içermeli (Instagram carousel sınırı).`);

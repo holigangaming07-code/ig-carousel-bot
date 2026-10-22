@@ -26,7 +26,7 @@ const { fill } = require('./slides');
   for (let i = 0; i < post.slides.length; i++) {
     const s = post.slides[i];
     let html;
-    try { html = fill(tpl, css, s, i, post.slides.length, post.theme); } catch (e) { fail(`${e.message} (post: ${post.id}, slayt ${i + 1})`); }
+    try { html = fill(tpl, css, s, i, post.slides.length, post.theme, data.brand); } catch (e) { fail(`${e.message} (post: ${post.id}, slayt ${i + 1})`); }
     await page.setContent(html, { waitUntil: 'load' });
     const file = path.join(outDir, `slide-${i + 1}.jpg`);
     await page.screenshot({ path: file, type: 'jpeg', quality: 92 });

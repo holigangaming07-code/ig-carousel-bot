@@ -5,5 +5,10 @@
   "topics": [],
   "repos": [],
   "posts": [],
-  "minStars": 10000
+  "minStars": 10000,
+  "brand": {
+    "name": "Repo Rehberi",
+    "handle": "@reporehberi",
+    "tag": "GitHub Rehberi"
+  }
 }

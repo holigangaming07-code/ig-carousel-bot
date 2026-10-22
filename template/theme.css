@@ -14,18 +14,18 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 1080px; height: 1350px; background: var(--bg); }
 .slide {
-  position: relative; width: 1080px; height: 1350px; padding: 100px 90px 130px;
+  position: relative; width: 1080px; height: 1350px; padding: 200px 90px 190px;
   display: flex; flex-direction: column; justify-content: center; gap: 44px;
   background: radial-gradient(circle at 85% 8%, var(--glow), transparent 45%), var(--bg);
   color: var(--fg); font-family: var(--font); overflow: hidden;
 }
-.slide::before { content: ""; position: absolute; left: 0; top: 0; width: 14px; height: 100%; background: var(--accent); }
+.slide::before { content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 12px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
 h1 { font-size: 120px; line-height: 1.05; font-weight: 800; letter-spacing: -2px; }
 h2 { font-size: 78px; line-height: 1.1; font-weight: 800; }
 p, li { font-size: 44px; line-height: 1.4; color: var(--muted); }
 .badge { align-self: flex-start; font-size: 32px; padding: 12px 28px; border-radius: 999px; background: var(--bg2); border: 2px solid var(--accent); color: var(--accent); font-weight: 600; }
 .sub { font-size: 52px; color: var(--muted); }
-.swipe { position: absolute; left: 90px; bottom: 60px; font-size: 34px; color: var(--accent); font-weight: 600; }
+.swipe { position: absolute; left: 90px; bottom: 150px; font-size: 34px; color: var(--accent); font-weight: 600; }
 .num { width: 120px; height: 120px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 70px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 pre.code { background: var(--code-bg); border: 2px solid var(--line); border-radius: 24px; padding: 48px; font-family: var(--mono); font-size: 46px; line-height: 1.5; color: var(--accent2); white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere; }
 pre.code.long { font-size: 36px; }
@@ -34,7 +34,6 @@ ul { list-style: none; display: flex; flex-direction: column; gap: 28px; }
 li { color: var(--fg); padding-left: 64px; position: relative; font-size: 52px; }
 li::before { content: "✓"; position: absolute; left: 0; color: var(--accent2); font-weight: 800; }
 .cta h2 { color: var(--accent); }
-.counter { position: absolute; right: 90px; bottom: 60px; font-size: 34px; color: var(--muted); font-family: var(--mono); }
 
 /* yeni slayt tipleri */
 .bignum { font-size: 260px; line-height: 1; font-weight: 800; color: var(--accent); letter-spacing: -6px; }
@@ -48,3 +47,13 @@ blockquote { font-size: 68px; line-height: 1.3; font-weight: 700; }
 .slide.theme-forest { --bg:#0c1a14; --bg2:#12281e; --fg:#e8f5ec; --muted:#8fb5a0; --accent:#34d399; --accent2:#a3e635; --code-bg:#06100b; --glow:rgba(52,211,153,.24); --line:#25503c; }
 .slide.theme-paper { --bg:#f6f1e7; --bg2:#ebe3d2; --fg:#1d1b16; --muted:#6b6458; --accent:#c2410c; --accent2:#15803d; --code-bg:#fffdf8; --glow:rgba(194,65,12,.14); --line:#d8cdb6; }
 .slide.theme-paper .cta h2 { color: var(--accent); }
+/* sayfa kimliği: üst bant + alt bilgi */
+.top { position: absolute; left: 90px; right: 90px; top: 62px; display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 18px; font-size: 38px; font-weight: 800; letter-spacing: -.5px; }
+.mark { width: 64px; height: 64px; border-radius: 18px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: var(--bg); font-size: 40px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.tag { font-size: 26px; font-weight: 600; color: var(--muted); padding: 10px 22px; border: 2px solid var(--line); border-radius: 999px; background: var(--bg2); }
+.foot { position: absolute; left: 90px; right: 90px; bottom: 62px; display: flex; align-items: center; justify-content: space-between; }
+.handle { font-size: 32px; font-weight: 700; color: var(--accent); }
+.dots { display: flex; gap: 12px; }
+.dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--line); }
+.dots i.on { width: 42px; border-radius: 99px; background: var(--accent); }

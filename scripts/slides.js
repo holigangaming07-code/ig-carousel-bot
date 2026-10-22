@@ -4,8 +4,9 @@
     String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
   const codeBlock = (code = '') => {
-    const longest = Math.max(0, ...String(code).split('\n').map((l) => l.length));
-    return `<pre class="code${longest > 34 ? ' long' : ''}">${esc(code)}</pre>`;
+    const longest = Math.max(1, ...String(code).split(String.fromCharCode(10)).map((l) => l.length));
+    const size = Math.max(28, Math.min(46, Math.floor(790 / (longest * 0.6))));
+    return `<pre class="code" style="font-size:${size}px">${esc(code)}</pre>`;
   };
 
   const builders = {
@@ -34,7 +35,7 @@
     <h2>${esc(s.title)}</h2>
     <p>${esc(s.text)}</p>`,
     stat: (s) => `
-    <div class="bignum">${esc(s.value)}</div>
+    <div class="bignum" style="font-size:${Math.min(260, Math.floor(880 / (String(s.value).length * 0.62)))}px">${esc(s.value)}</div>
     <h2>${esc(s.title)}</h2>
     ${s.text ? `<p>${esc(s.text)}</p>` : ''}`,
     quote: (s) => `
@@ -44,7 +45,9 @@
   };
 
   // slide.html şablonunu doldurup tam HTML döndürür
-  function fill(tpl, css, slide, index, total, theme) {
+  function fill(tpl, css, slide, index, total, theme, brand) {
+    brand = Object.assign({ name: 'Repo Rehberi', handle: '@reporehberi', tag: 'GitHub Rehberi' }, brand || {});
+    const dots = Array.from({ length: total }, (_, i) => `<i class="${i === index ? 'on' : ''}"></i>`).join('');
     const build = builders[slide.type];
     if (!build) throw new Error(`Bilinmeyen slayt tipi "${slide.type}". Geçerli: ${Object.keys(builders).join(', ')}`);
     return tpl
@@ -52,6 +55,11 @@
       .replace('{{TYPE}}', slide.type)
       .replace('{{THEME}}', theme ? `theme-${theme}` : '')
       .replace('{{BODY}}', () => build(slide))
+      .replace('{{BRAND}}', () => esc(brand.name))
+      .replace('{{INITIAL}}', () => esc(Array.from(brand.name)[0] || 'R'))
+      .replace('{{TAG}}', () => esc(brand.tag))
+      .replace('{{HANDLE}}', () => esc(brand.handle))
+      .replace('{{DOTS}}', dots)
       .replace('{{COUNTER}}', `${index + 1}/${total}`);
   }
 
@@ -73,7 +81,8 @@
   // GitHub API'nin repo nesnesinden (+ README'den) hazır carousel postu üretir
   function postFromRepo(g, id, readme, theme) {
     const stars = g.stargazers_count >= 1000 ? (g.stargazers_count / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(g.stargazers_count);
-    const feats = [g.language && `${g.language} ile yazıldı`, g.license && g.license.spdx_id && g.license.spdx_id !== 'NOASSERTION' && `${g.license.spdx_id} lisanslı`, ...(g.topics || []).slice(0, 3).map((t) => '#' + t)].filter(Boolean);
+    const fork = g.forks_count >= 1000 ? (g.forks_count / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(g.forks_count || 0);
+    const feats = [g.language && `${g.language} ile yazıldı`, g.license && g.license.spdx_id && g.license.spdx_id !== 'NOASSERTION' && `${g.license.spdx_id} lisanslı`, `${fork} kez fork edildi`, g.pushed_at && `Son güncelleme: ${g.pushed_at.slice(0, 10)}`].filter(Boolean);
     const tags = ['#github', '#opensource', ...(g.topics || []).slice(0, 5).map((t) => '#' + t.replace(/-/g, ''))].join(' ');
     const cmds = installCommands(readme);
     const steps = [
