@@ -28,7 +28,7 @@ async function llm(prompt) {
   const r = await fetch('https://models.github.ai/inference/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: process.env.GH_MODEL || 'openai/gpt-4.1-mini', max_tokens: 900, temperature: 0.4, messages: [{ role: 'user', content: prompt }] }),
+    body: JSON.stringify({ model: process.env.GH_MODEL || 'openai/gpt-4.1-mini', max_tokens: 900, temperature: 0.4, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: 'Yalnızca geçerli JSON nesnesi döndür.' }, { role: 'user', content: prompt }] }),
   });
   if (!r.ok) throw new Error(`GitHub Models ${r.status}`);
   return (await r.json()).choices[0].message.content;
@@ -45,6 +45,7 @@ ${readme.slice(0, 6000)}`;
   try {
     const text = await llm(prompt);
     if (!text) return null;
+    console.log(`Yapay zeka yanıtı: ${text.slice(0, 200).replace(/\s+/g, ' ')}`);
     const j = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
     if (!j.explain || !Array.isArray(j.features)) throw new Error('eksik alan');
     return j;
