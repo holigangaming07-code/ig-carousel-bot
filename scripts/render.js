@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 const { ROOT, loadPosts, pickPost, fail } = require('./common');
-const { fill } = require('./slides');
+const { fill, setBg } = require('./slides');
 
 (async () => {
   const data = loadPosts();
@@ -14,7 +14,8 @@ const { fill } = require('./slides');
     return;
   }
 
-  const css = fs.readFileSync(path.join(ROOT, 'template', 'theme.css'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'template', 'theme.css'), 'utf8') + fs.readFileSync(path.join(ROOT, 'template', 'fonts.css'), 'utf8');
+  setBg((n) => 'data:image/jpeg;base64,' + fs.readFileSync(path.join(ROOT, 'template', 'rv', `${n}.jpg`)).toString('base64'));
   const tpl = fs.readFileSync(path.join(ROOT, 'template', 'slide.html'), 'utf8');
   const outDir = path.join(ROOT, 'output', post.id);
   fs.rmSync(outDir, { recursive: true, force: true });
@@ -28,6 +29,7 @@ const { fill } = require('./slides');
     let html;
     try { html = fill(tpl, css, s, i, post.slides.length, post.theme, data.brand); } catch (e) { fail(`${e.message} (post: ${post.id}, slayt ${i + 1})`); }
     await page.setContent(html, { waitUntil: 'load' });
+    await page.evaluate(() => document.fonts.ready);
     const file = path.join(outDir, `slide-${i + 1}.jpg`);
     await page.screenshot({ path: file, type: 'jpeg', quality: 92 });
     console.log(`✔ ${path.relative(ROOT, file)}`);

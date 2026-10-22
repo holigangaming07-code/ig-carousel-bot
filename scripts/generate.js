@@ -38,6 +38,7 @@ async function llm(prompt) {
 
 async function aiSummary(g, readme) {
   const prompt = `Aşağıdaki GitHub projesini 8 slaytlık bir Instagram carousel için sade, akıcı, samimi TÜRKÇE ile anlat. SADECE geçerli JSON döndür, başka metin yazma.
+Slayt başlıkları sabittir: 2 "Bu repo ne işe yarıyor?", 3 "Kimler için uygun?", 4 "Kurulum gerekiyor mu?", 5 "Özel bölümler nasıl bulunur?", 6 "Arama nasıl yapılır?", 7 "İstersen bilgisayarına da indirebilirsin". İçeriği bu başlıklara uyacak şekilde yaz (proje uygulama ise 5. slaytta ana bölümlerini, 6. slaytta dokümantasyon/komutlara nasıl ulaşılacağını anlat).
 Kurallar: her metin kısa olsun (belirtilen karakter sınırını AŞMA). "icon" alanları TEK emoji olsun. Adım metinlerinin başına numara veya 1️⃣ gibi emoji koyma. Bilmediğin şeyi uydurma; README'de olmayan komut/adres yazma. Proje bir uygulama değil de liste/doküman ise kurulum ve indirme kısımlarını buna göre dürüstçe yaz.
 JSON şeması:
 {
@@ -52,8 +53,8 @@ JSON şeması:
  "audience": [ {"icon":"emoji","name":"en fazla 20 karakter","text":"en fazla 30 karakter","needs":["en fazla 24 karakter","...","..."]} ],   // tam 4 adet, needs tam 3
  "audience_bottom": "neden ilgililer kullanmalı, en fazla 55 karakter",
  "setup_intro": "kurulum gerekiyor mu, 1 cümle, en fazla 55 karakter",
- "setup_steps": [ {"icon":"emoji","text":"en fazla 28 karakter"} ],   // tam 3 adet
- "setup_notes": ["en fazla 30 karakter","...","..."],   // tam 3
+ "setup_steps": [ {"icon":"emoji","text":"en fazla 26 karakter"} ],   // tam 3 adet
+ "setup_notes": ["en fazla 14 karakter","...","..."],   // tam 3, çok kısa etiketler
  "setup_bottom": "kısa önemli not/ipucu, en fazla 55 karakter",
  "sections_title": "Neler var? gibi kısa başlık, en fazla 24 karakter",
  "sections_intro": "en fazla 55 karakter",
@@ -64,6 +65,9 @@ JSON şeması:
  "usage_steps": [ {"icon":"emoji","text":"en fazla 26 karakter"} ],   // tam 3 adet
  "usage_link": "README'de varsa web sitesi/arama adresi, yoksa github.com/${g.full_name}",
  "usage_examples": ["en fazla 22 karakter","...","...","..."],   // tam 4
+ "usage_title": "arama/dokümantasyon sayfasının başlığı, en fazla 22 karakter",
+ "usage_input": "arama kutusuna yazılmış örnek, en fazla 24 karakter",
+ "usage_results": [ {"title":"en fazla 16 karakter","text":"en fazla 22 karakter","tags":["en fazla 7 karakter","...","..."]} ],   // tam 4 adet örnek sonuç, tags tam 3
  "usage_bottom": "en fazla 55 karakter",
  "download_intro": "indirmek zorunlu mu, 1 cümle, en fazla 55 karakter",
  "download_command": "git clone https://github.com/${g.full_name}.git",

@@ -57,53 +57,110 @@
   };
 
 
-  // ---- Repo Rehberi şablonu (rv*): örnek tasarımlara göre ----
-  const LEVELS = [['0-999', '#9aa4b2'], ['1K-9.9K', '#34d399'], ['10K-49.9K', '#3b9bff'], ['50K-99.9K', '#a78bfa'], ['100K+', '#ffb02e']];
-  const stepText = (t) => String(t.text || t).replace(/^[\s\u20E3\uFE0F0-9.)\-]+(?=\S)/u, '');
+  // ---- Repo Rehberi şablonu: hazır arka plan resimleri (template/rv) + üstüne yazılan metin ----
+  let LAYOUT = null;
+  let BG = (n) => `../template/rv/${n}.jpg`;
+  if (typeof module !== 'undefined' && module.exports) { try { LAYOUT = require('../template/rv/layout.json'); } catch (e) { /* layout yoksa rv slaytları çizilemez */ } }
   const arr = (a) => (Array.isArray(a) ? a : []);
-  const hdr = (ctx) => `<div class="rv-hdr"><span>📖</span>${esc(String((ctx.brand && ctx.brand.name) || 'Repo Rehberi').toUpperCase())}</div>`;
-  const ttl = (t, sub, size) => `<div class="rv-title" style="font-size:${size || Math.max(62, Math.min(104, Math.floor(940 / (String(t).length * 0.58))))}px">${esc(t)}</div>${sub ? `<div class="rv-sub">${esc(sub)}</div>` : ''}`;
-  const legend = (tier, strip) => `<div class="rv-legend${strip ? ' strip' : ''}"><div class="lt">⭐ YILDIZ SEVİYESİ</div>${LEVELS.map(([l, c], i) => `<div class="lv${i === tier ? ' on' : ''}" style="--c:${c}"><span>★</span>${l}</div>`).join('')}</div>`;
-  const books = (cats) => `<div class="rv-books">${(arr(cats).length ? cats : ['Kod', 'Veri', 'Yapay Zeka', 'Güvenlik', 'Web']).slice(0, 5).map((c, i) => `<div class="bk b${i}">${esc(c)}</div>`).join('')}</div>`;
-  const laptop = (owner, repo) => `<div class="rv-lap"><div class="bar"><i></i><i></i><i></i><span></span></div><div class="repo"><b>${esc(owner)}</b> / ${esc(repo)}<em>★ Star</em></div>${[0, 1, 2, 3, 4, 5].map((i) => `<div class="row"><u></u><s style="width:${40 + ((i * 37) % 45)}%"></s></div>`).join('')}</div>`;
-  const banner = (icon, text) => (text ? `<div class="rv-banner"><span class="bi">${esc(icon)}</span><b>${esc(text)}</b><i>➜</i></div>` : '');
-  const deco = (cats) => `<div class="rv-deco">${books(cats)}</div>`;
-  const icard = (it, i, big) => `<div class="rv-card c${i % 4}"><span class="ci2">${esc(it.icon || '✦')}</span><div><b>${esc(it.title || it.name)}</b>${it.text ? `<p>${esc(it.text)}</p>` : ''}</div></div>`;
+  const stepText = (t) => String((t && t.text) || t || '').replace(/^[\s\u20E3\uFE0F0-9.)\-]+(?=\S)/u, '');
+  // yıldız seviyesine göre arka plan tonu (0-999 gri, 1K yeşil, 10K mavi (özgün), 50K mor, 100K+ altın)
+  const TONES = ['saturate(.12) brightness(1.12)', 'hue-rotate(-105deg) saturate(1.05)', 'none', 'hue-rotate(38deg)', 'hue-rotate(160deg) saturate(1.3)'];
+  const CY = '#43d9ff';
+
+  // kutuya sığan en büyük yazı boyutu (sözcük sarmalı tahmini)
+  function linesFor(text, w, fs, cw) {
+    let lines = 1, cur = 0;
+    for (const wd of String(text).split(/\s+/)) {
+      const ww = wd.length * cw * fs, sp = cur ? 0.28 * fs : 0;
+      if (cur + sp + ww <= w) cur += sp + ww;
+      else { lines += cur ? 1 : 0; cur = ww; if (ww > w) lines += Math.floor(ww / w); }
+    }
+    return lines;
+  }
+  const cwOf = (f) => (f.mono ? 0.62 : f.up ? 0.74 : f.fw >= 800 ? 0.6 : f.fw >= 700 ? 0.575 : 0.55);
+  function fit1(text, f) {
+    for (let fs = f.fs; fs >= f.mn; fs--) if (linesFor(text, f.w, fs, cwOf(f)) * f.lh * fs <= f.h + 1) return fs;
+    return f.mn;
+  }
+  function fit2(a, b, f) {
+    for (let fs = f.fs; fs >= f.mn; fs--) {
+      const h = linesFor(a, f.w, fs, cwOf(f)) * f.lh * fs + linesFor(b || '', f.w, fs * 0.74, 0.55) * 1.2 * fs * 0.74;
+      if (h <= f.h + 1) return fs;
+    }
+    return f.mn;
+  }
+
+  function plate(name, d, c, draw) {
+    const L = LAYOUT && LAYOUT.slides[name];
+    if (!L) throw new Error('rv yerleşimi yüklenmedi');
+    const out = [];
+    const base = (f, fs, inner, extra) => `<div class="fx${f.grad ? ' grad' : ''}${f.nw ? ' nw' : ''}" style="left:${f.x}px;top:${f.y}px;width:${f.w}px;height:${f.h}px;font-size:${fs}px;color:${f.c};font-weight:${f.fw};text-align:${f.al};line-height:${f.lh};${f.mono ? "font-family:Consolas,'DejaVu Sans Mono',monospace;" : ''}${f.up ? 'text-transform:uppercase;letter-spacing:.5px;' : ''}${f.rot ? `transform:rotate(${f.rot}deg);` : ''}${extra || ''}"><div>${inner}</div></div>`;
+    // tek parça metin
+    const T = (k, text) => { const f = L.f[k]; if (f && text != null && text !== '') out.push(base(f.up ? Object.assign({ nw: 1 }, f) : f, fit1(text, f), esc(text))); };
+    // başlık + açıklama (iki renk)
+    const T2 = (k, a, b) => { const f = L.f[k]; if (!f || !a) return; const fs = fit2(a, b, f); out.push(base(f, fs, `<b style="display:block">${esc(a)}</b>${b ? `<span style="display:block;font-weight:500;font-size:.74em;line-height:1.2;color:${f.c2 || '#b9c6e6'}">${esc(b)}</span>` : ''}`)); };
+    // renkli iki parçalı tek satır (ör. sayı + etiket)
+    const R = (k, parts, size, sub) => { const f = Object.assign({ nw: 1 }, L.f[k]); if (!L.f[k]) return; const len = parts.reduce((n, p) => n + String(p[0]).length, 0); const fs = size || Math.max(f.mn, Math.min(f.fs, Math.floor(f.w / (len * 0.6)))); out.push(base(f, fs, parts.map((p) => `<span style="color:${p[1] || f.c}">${esc(p[0])}</span>`).join('') + (sub ? `<div style="font-size:${Math.round(fs * 0.58)}px;font-weight:500;color:#cfd8ee">${esc(sub)}</div>` : ''))); };
+    draw({ T, T2, R, L, cats: () => arr(d.categories).slice(0, 5).forEach((t, i) => T(`cat${i}`, t)) });
+    const tier = Math.max(0, Math.min(4, Number.isInteger(d.tier) ? d.tier : 2));
+    const r = L.legend[tier];
+    const glow = r ? `<div class="lg" style="left:${r[0] - 3}px;top:${r[1] - 3}px;width:${r[2] + 6}px;height:${r[3] + 6}px"></div>` : '';
+    return `<div class="rvs" style="filter:${TONES[tier]}"><div class="rvbg" style="background-image:url('${BG(L.bg)}')"></div>${out.join('')}${glow}</div>`;
+  }
 
   const rv = {
-    rvCover: (s, c) => `${hdr(c)}${ttl(s.title, s.tagline, Math.max(56, Math.min(118, Math.floor(920 / (String(s.title).length * 0.55)))))}
-    <div class="rv-tiles"><div class="tile"><span class="ti">⭐</span><div><b>${esc(s.stars)}</b> YILDIZ<small>${esc(s.date)}</small></div></div><div class="tile f"><span class="ti"><svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="5" r="2.4"/><circle cx="6" cy="19" r="2.4"/><circle cx="18" cy="8" r="2.4"/><path d="M6 7.4v9.2M18 10.4c0 4-6 3-11 7"/></svg></span><div><b>${esc(s.forks)}</b> FORK</div></div></div>
-    <div class="rv-mid">${legend(s.tier)}${laptop(s.owner, s.repo)}</div>${deco(s.categories)}${banner('📖', s.promise)}`,
-    rvExplain: (s, c) => `${hdr(c)}${ttl(s.title || 'Bu repo ne işe yarıyor?', s.summary)}
-    <div class="rv-card wide c0"><span class="ci2">📘</span><div><b>${esc(s.cardTitle || 'Ne sunuyor?')}</b><p>${esc(s.description)}</p></div></div>
-    <div class="rv-grid">${arr(s.features).slice(0, 4).map((f, i) => icard(f, i)).join('')}</div>
-    ${s.extra ? `<div class="rv-card wide c3"><span class="ci2">${esc(s.extra.icon || '📣')}</span><div><b>${esc(s.extra.title)}</b>${s.extra.text ? `<p>${esc(s.extra.text)}</p>` : ''}</div></div>` : ''}
-    <div class="rv-deco">${legend(s.tier, true)}</div>`,
-    rvAudience: (s, c) => `${hdr(c)}${ttl(s.title || 'Kimler için uygun?', s.intro)}
-    <div class="rv-grid">${arr(s.audience).slice(0, 4).map((a, i) => `<div class="aud c${i % 4}"><div class="h"><span class="av">${esc(a.icon || '🙂')}</span><div><b>${esc(a.name)}</b><p>${esc(a.text)}</p></div></div>${arr(a.needs).slice(0, 3).map((n) => `<div class="nd">${esc(n)}</div>`).join('')}</div>`).join('')}</div>
-    ${deco(s.categories)}${banner('📖', s.bottom)}`,
-    rvSetup: (s, c) => `${hdr(c)}${ttl(s.title || 'Kurulum gerekiyor mu?', s.intro)}
-    <div class="rv-steps">${arr(s.steps).slice(0, 3).map((t, i) => `<div class="st c${i}"><div class="n">${i + 1}</div><div class="e">${esc(t.icon || '')}</div>${esc(stepText(t))}</div>`).join('')}</div>
-    <div class="rv-notes">${arr(s.notes).slice(0, 3).map((n, i) => `<div class="nt c${i}">${esc(n)}</div>`).join('')}</div>
-    ${legend(s.tier, true)}${deco(s.categories)}${banner('💡', s.bottom)}`,
-    rvSections: (s, c) => `${hdr(c)}${ttl(s.title || 'Neler var?', s.intro)}
-    <div class="rv-cols">${arr(s.sections).slice(0, 3).map((x, i) => `<div class="col c${i}"><b>${esc(x.icon || '')} ${esc(x.name)}</b><p>${esc(x.text)}</p>${arr(x.items).slice(0, 4).map((t) => `<div class="it">${esc(t)}</div>`).join('')}</div>`).join('')}</div>
-    ${s.note ? `<div class="rv-note">💡 ${esc(s.note)}</div>` : ''}${legend(s.tier, true)}${deco(s.categories)}${banner('📖', s.bottom)}`,
-    rvUsage: (s, c) => `${hdr(c)}${ttl(s.title || 'Nasıl kullanılır?', s.intro)}
-    <div class="rv-steps">${arr(s.steps).slice(0, 3).map((t, i) => `<div class="st c${i}"><div class="n">${i + 1}</div><div class="e">${esc(t.icon || '')}</div>${esc(stepText(t))}</div>`).join('')}</div>
-    ${s.link ? `<div class="rv-url">🔗 ${esc(s.link)}</div>` : ''}
-    <div class="rv-notes">${arr(s.examples).slice(0, 4).map((e, i) => `<div class="nt c${i}">🔎 ${esc(e)}</div>`).join('')}</div>${legend(s.tier, true)}${deco(s.categories)}${banner('📖', s.bottom)}`,
-    rvDownload: (s, c) => `${hdr(c)}${ttl(s.title || 'İstersen bilgisayarına da indirebilirsin', s.intro)}
-    <div class="rv-term"><span>$</span> ${esc(s.command)}</div>
-    <div class="rv-steps">${arr(s.advantages).slice(0, 3).map((a, i) => `<div class="st c${i + 1}"><div class="e">${esc(a.icon || '')}</div><b>${esc(a.title)}</b><p>${esc(a.text || '')}</p></div>`).join('')}</div>
-    ${s.alt ? `<div class="rv-card wide c1"><span class="ci2">📦</span><div><b>${esc(s.alt.title)}</b><p>${esc(s.alt.text)}</p></div></div>` : ''}
-    <div class="rv-deco"></div>${banner('💡', s.note)}`,
-    rvFinal: (s, c) => `${hdr(c)}${ttl(s.title || 'Kaydet, takip et, keşfet', s.intro)}
-    <div class="rv-table">${arr(s.rows).slice(0, 5).map((r, i) => `<div class="tr c${i % 4}"><span class="k">${esc(r.icon || '')} ${esc(r.k)}</span><span class="v">${esc(r.v)}</span></div>`).join('')}</div>
-    ${legend(s.tier, true)}${deco(s.categories)}
-    <div class="rv-cta"><div class="c0">🔖 Bu gönderiyi <b>kaydet</b></div><div class="c1">✈️ Arkadaşına <b>gönder</b></div><div class="c2">👤 ${esc((c.brand && c.brand.name) || 'Repo Rehberi')}'ni <b>takip et</b></div></div>`,
+    rvCover: (s, c) => plate('rvCover', s, c, ({ T, R, cats }) => {
+      T('title', s.title); T('tagline', s.tagline);
+      const f = LAYOUT.slides.rvCover.f.stars, n = String(s.stars), fs = Math.max(26, Math.min(44, Math.floor(215 / (n.length * 0.62))));
+      R('stars', [[n, CY], [' YILDIZ', '#fff']], fs, s.date);
+      R('forks', [[String(s.forks), '#d58bff'], [' FORK', '#fff']]);
+      R('repoHead', [[s.owner || '', CY], [' / ', '#9fb0d0'], [s.repo || '', '#fff']]);
+      T('promise', s.promise); cats();
+    }),
+    rvExplain: (s) => plate('rvExplain', s, null, ({ T, T2 }) => {
+      T('summary', s.summary); T('ctitle', s.cardTitle || 'Ne sunuyor?'); T('desc', s.description);
+      arr(s.features).slice(0, 4).forEach((x, i) => T2(`feat${i}`, x.title, x.text));
+      if (s.extra) T2('extra', s.extra.title, s.extra.text);
+    }),
+    rvAudience: (s) => plate('rvAudience', s, null, ({ T, T2, cats }) => {
+      T('sub', s.intro); T('bottom', s.bottom);
+      arr(s.audience).slice(0, 4).forEach((a, i) => { T2(`a${i}h`, a.name, a.text); arr(a.needs).slice(0, 3).forEach((n, j) => T(`a${i}r${j}`, n)); });
+      cats();
+    }),
+    rvSetup: (s) => plate('rvSetup', s, null, ({ T, cats }) => {
+      T('sub', s.intro); T('bottom', s.bottom);
+      arr(s.steps).slice(0, 3).forEach((t, i) => T(`st${i}`, stepText(t)));
+      arr(s.notes).slice(0, 3).forEach((n, i) => T(`n${i}`, n));
+      cats();
+    }),
+    rvSections: (s) => plate('rvSections', s, null, ({ T, T2, cats }) => {
+      T('sub', s.intro); T('bottom', s.bottom); T('note', s.note);
+      arr(s.sections).slice(0, 3).forEach((x, i) => { T2(`s${i}h`, `${x.icon || ''} ${x.name}`.trim(), x.text); arr(x.items).slice(0, 4).forEach((t, j) => T(`s${i}i${j}`, t)); });
+      cats();
+    }),
+    rvUsage: (s) => plate('rvUsage', s, null, ({ T, cats }) => {
+      T('sub', s.intro); T('url', s.link); T('exT', 'Arama örnekleri');
+      T('pageTitle', s.pageTitle || s.repo || ''); T('input', s.input || arr(s.examples)[0] || '');
+      arr(s.steps).slice(0, 3).forEach((t, i) => T(`st${i}`, stepText(t)));
+      arr(s.examples).slice(0, 4).forEach((e, j) => T(`ex${j}`, e));
+      arr(s.results).slice(0, 4).forEach((r, i) => { T(`res${i}t`, r.title); T(`res${i}d`, r.text); arr(r.tags).slice(0, 3).forEach((g, k) => T(`res${i}g${k}`, g)); });
+      cats();
+    }),
+    rvDownload: (s) => plate('rvDownload', s, null, ({ T }) => {
+      T('sub', s.intro); T('cmd', s.command);
+      arr(s.advantages).slice(0, 3).forEach((a, i) => { T(`adv${i}t`, a.title); T(`adv${i}b`, a.text); });
+      if (s.alt) { T('altT', s.alt.title); T('altB', s.alt.text); }
+      if (s.note) { T('noteT', s.noteTitle || 'Önemli not'); T('noteB', s.note); }
+    }),
+    rvFinal: (s, c) => plate('rvFinal', s, c, ({ T, R, cats }) => {
+      T('sub', s.intro);
+      arr(s.rows).slice(0, 5).forEach((r, i) => T(`val${i}`, r.v));
+      R('repoHead', [[s.owner || '', CY], [' / ', '#9fb0d0'], [s.repo || '', '#fff']]);
+      cats();
+    }),
   };
   Object.assign(builders, rv);
+
 
   // slide.html şablonunu doldurup tam HTML döndürür
   function fill(tpl, css, slide, index, total, theme, brand) {
@@ -188,7 +245,7 @@
         { type: 'rvAudience', ...base, intro: ai.audience_intro, audience: ai.audience, bottom: ai.audience_bottom },
         { type: 'rvSetup', ...base, intro: ai.setup_intro, steps: ai.setup_steps, notes: ai.setup_notes, bottom: ai.setup_bottom },
         { type: 'rvSections', ...base, title: ai.sections_title, intro: ai.sections_intro, sections: ai.sections, note: ai.sections_note, bottom: ai.sections_bottom },
-        { type: 'rvUsage', ...base, intro: ai.usage_intro, steps: ai.usage_steps, link: ai.usage_link, examples: ai.usage_examples, bottom: ai.usage_bottom },
+        { type: 'rvUsage', ...base, intro: ai.usage_intro, steps: ai.usage_steps, link: ai.usage_link, examples: ai.usage_examples, pageTitle: ai.usage_title || g.name, input: ai.usage_input, results: ai.usage_results },
         { type: 'rvDownload', ...base, intro: ai.download_intro, command: ai.download_command || cmds[0] || `git clone ${g.html_url}`, advantages: ai.download_advantages, alt: ai.download_alt, note: ai.download_note },
         { type: 'rvFinal', ...base, intro: ai.final_intro, rows: [
           { icon: '💻', k: 'Proje:', v: g.name }, { icon: '⭐', k: 'Yıldız:', v: nf(g.stargazers_count) },
@@ -207,7 +264,7 @@
     };
   }
 
-  const api = { esc, builders, fill, installCommands, postFromRepo, THEME_IDS, tierFor };
+  const api = { esc, builders, fill, installCommands, postFromRepo, THEME_IDS, tierFor, setLayout: (l) => { LAYOUT = l; }, setBg: (fn) => { BG = fn; } };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Slides = api;
 })(this);

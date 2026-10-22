@@ -17,7 +17,7 @@ POSTS = os.path.join(ROOT, "content", "posts.json")
 OUT = os.path.join(ROOT, "output")
 STATIC = {"/": "studio/index.html", "/app.js": "studio/app.js", "/app.css": "studio/app.css",
           "/slides.js": "scripts/slides.js", "/theme.css": "template/theme.css",
-          "/slide.html": "template/slide.html"}
+          "/slide.html": "template/slide.html", "/fonts.css": "template/fonts.css"}
 ID_RE = re.compile(r"^[\w.\-]{1,80}$")
 last_ping = [time.time()]
 seen_ping = [False]
@@ -47,6 +47,10 @@ class Handler(BaseHTTPRequestHandler):
             ctype = (mimetypes.guess_type(p)[0] or "text/plain") + "; charset=utf-8"
             with open(p, "rb") as f:
                 return self.send(200, f.read(), ctype)
+        m = re.match(r"^/rv/(layout\.json|[1-8]\.jpg)$", u.path)
+        if m:
+            with open(os.path.join(ROOT, "template", "rv", m.group(1)), "rb") as f:
+                return self.send(200, f.read(), "application/json" if m.group(1).endswith("json") else "image/jpeg")
         if u.path == "/api/posts":
             with open(POSTS, encoding="utf-8") as f:
                 return self.send(200, f.read().encode("utf-8"))

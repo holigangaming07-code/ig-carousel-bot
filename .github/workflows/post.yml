@@ -32,6 +32,7 @@ concurrency:
 jobs:
   post:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       DRY_RUN: ${{ inputs.dry_run == true && 'true' || 'false' }}
       POST_ID: ${{ inputs.post_id }}

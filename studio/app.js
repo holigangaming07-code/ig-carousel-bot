@@ -204,7 +204,15 @@ function bind() {
 }
 
 (async () => {
-  [data, css, tpl] = await Promise.all([fetch('/api/posts').then((r) => r.json()), fetch('/theme.css').then((r) => r.text()), fetch('/slide.html').then((r) => r.text())]);
+  let fonts, layout;
+  [data, css, tpl, fonts, layout] = await Promise.all([fetch('/api/posts').then((r) => r.json()), fetch('/theme.css').then((r) => r.text()), fetch('/slide.html').then((r) => r.text()), fetch('/fonts.css').then((r) => r.text()), fetch('/rv/layout.json').then((r) => r.json())]);
+  css += fonts; Slides.setLayout(layout);
+  const bg = {};
+  await Promise.all([1, 2, 3, 4, 5, 6, 7, 8].map(async (n) => {
+    const b = await (await fetch(`/rv/${n}.jpg`)).blob();
+    bg[n] = await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(b); });
+  }));
+  Slides.setBg((n) => bg[n]);
   $('brandName').value = (data.brand || {}).name || 'Repo Rehberi'; $('brandHandle').value = (data.brand || {}).handle || '@reporehberi';
   $('cfgRepo').value = data.repo || ''; $('cfgBranch').value = data.branch || '';
   bind(); refresh(); status('Hazır');
