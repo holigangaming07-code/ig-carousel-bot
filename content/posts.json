@@ -22,6 +22,253 @@
           "text": "github.com/kullanici/proje"
         }
       ]
+    },
+    {
+      "id": "public-apis",
+      "published": false,
+      "lang": "tr",
+      "account": "tr",
+      "theme": "gold",
+      "source": "public-apis/public-apis",
+      "caption": "Yeni bir proje için API mi arıyorsun? Burası tam sana göre! 🚀\n\nÜcretsiz ve herkese açık API'leri tek listede topluyor.\n\nKaydır ve detayları gör.\n\nhttps://github.com/public-apis/public-apis\n\n#github #opensource #api #apis #dataset #development #free",
+      "slides": [
+        {
+          "type": "rvCover",
+          "lang": "tr",
+          "tier": 4,
+          "owner": "public-apis",
+          "repo": "public-apis",
+          "categories": [
+            "API",
+            "Açık Kaynak",
+            "Geliştirici",
+            "Liste",
+            "Python"
+          ],
+          "title": "public-apis",
+          "tagline": "Ücretsiz API'lerin ortak listesi, tek yerde",
+          "stars": "491.489",
+          "date": "23 Ekim 2026",
+          "forks": "54.667",
+          "promise": "Projen için ücretsiz API'leri hızlıca bul"
+        },
+        {
+          "type": "rvExplain",
+          "lang": "tr",
+          "tier": 4,
+          "owner": "public-apis",
+          "repo": "public-apis",
+          "categories": [
+            "API",
+            "Açık Kaynak",
+            "Geliştirici",
+            "Liste",
+            "Python"
+          ],
+          "summary": "Ücretsiz ve herkese açık API'leri tek listede topluyor.",
+          "description": "Bu depo, topluluk üyeleri tarafından elle derlenmiş ücretsiz API'lerin bir listesini sunuyor. Farklı alanlardan birçok API'yi bulup kendi projelerinde kullanabilirsin.",
+          "features": [
+            {
+              "icon": "📋",
+              "title": "Geniş liste",
+              "text": "Farklı alanlardan çok sayıda API"
+            },
+            {
+              "icon": "🛠️",
+              "title": "Elle derlenmiş",
+              "text": "Topluluk tarafından düzenleniyor"
+            },
+            {
+              "icon": "🆓",
+              "title": "Ücretsiz API'ler",
+              "text": "Projelerinde doğrudan kullanabilirsin"
+            },
+            {
+              "icon": "🌍",
+              "title": "Çok alanlı",
+              "text": "Hava, finans, haber ve daha fazlası"
+            }
+          ],
+          "extra": {
+            "icon": "💬",
+            "title": "Topluluk",
+            "text": "Discord sunucusu üzerinden destek alabilirsin"
+          }
+        },
+        {
+          "type": "rvAudience",
+          "lang": "tr",
+          "tier": 4,
+          "owner": "public-apis",
+          "repo": "public-apis",
+          "categories": [
+            "API",
+            "Açık Kaynak",
+            "Geliştirici",
+            "Liste",
+            "Python"
+          ],
+          "intro": "Bu liste özellikle geliştiricilere hitap ediyor.",
+          "audience": [
+            {
+              "icon": "👩‍💻",
+              "name": "Yazılımcılar",
+              "text": "Yeni projeler geliştirenler",
+              "needs": [
+                "Hızlı API bulmak",
+                "Ücretsiz seçenekler",
+                "Güvenilir kaynaklar"
+              ]
+            },
+            {
+              "icon": "🎓",
+              "name": "Öğrenciler",
+              "text": "Pratik yapmak isteyenler",
+              "needs": [
+                "Gerçek veriyle çalışmak",
+                "Kolay başlangıç",
+                "Örnek projeler"
+              ]
+            },
+            {
+              "icon": "🚀",
+              "name": "Girişimciler",
+              "text": "Prototip hazırlayanlar",
+              "needs": [
+                "Düşük maliyet",
+                "Hızlı entegrasyon",
+                "Geniş kapsam"
+              ]
+            },
+            {
+              "icon": "🔍",
+              "name": "Meraklılar",
+              "text": "Yeni teknolojileri keşfedenler",
+              "needs": [
+                "Farklı alanlar",
+                "Keşif yapmak",
+                "Ilham almak"
+              ]
+            }
+          ],
+          "bottom": "Kendi projen için ilham ve kaynak bulmanın kolay yolu."
+        },
+        {
+          "type": "rvSetup",
+          "lang": "tr",
+          "tier": 4,
+          "owner": "public-apis",
+          "repo": "public-apis",
+          "categories": [
+            "API",
+            "Açık Kaynak",
+            "Geliştirici",
+            "Liste",
+            "Python"
+          ],
+          "intro": "Listeyi incelemek için kurulum gerekmiyor.",
+          "steps": [
+            {
+              "icon": "🌐",
+              "text": "Depoyu GitHub'da aç"
+            },
+            {
+              "icon": "📖",
+              "text": "Listeyi tarayarak incele"
+            },
+            {
+              "icon": "🔑",
+              "text": "API'nin kendi sitesinden kaydol"
+            }
+          ],
+          "notes": [
+            "Kurulum yok",
+            "Tarayıcı yeter",
+            "Anahtar gerekebilir"
+          ],
+          "bottom": "Her API'nin kendi kayıt ve kullanım koşulları olabilir."
+        },
+        {
+          "type": "rvDownload",
+          "lang": "tr",
+          "tier": 4,
+          "owner": "public-apis",
+          "repo": "public-apis",
+          "categories": [
+            "API",
+            "Açık Kaynak",
+            "Geliştirici",
+            "Liste",
+            "Python"
+          ],
+          "intro": "İndirmek zorunlu değil, isteğe bağlı.",
+          "command": "git clone https://github.com/public-apis/public-apis.git",
+          "advantages": [
+            {
+              "icon": "📴",
+              "title": "Çevrimdışı erişim",
+              "text": "Listeye internetsiz de bakabilirsin"
+            },
+            {
+              "icon": "🗂️",
+              "title": "Yerel kopya",
+              "text": "Depoyu kendi bilgisayarında tutarsın"
+            },
+            {
+              "icon": "🔄",
+              "title": "Güncelleme",
+              "text": "Pull ile son değişiklikleri alabilirsin"
+            }
+          ],
+          "alt": {
+            "title": "ZIP olarak indir",
+            "text": "GitHub sayfasında Code > Download ZIP seçeneğiyle tek tıkla indirebilirsin."
+          },
+          "note": "Depoyu indirmek gerekmez; GitHub'da doğrudan okuyabilirsin."
+        },
+        {
+          "type": "rvFinal",
+          "lang": "tr",
+          "tier": 4,
+          "owner": "public-apis",
+          "repo": "public-apis",
+          "categories": [
+            "API",
+            "Açık Kaynak",
+            "Geliştirici",
+            "Liste",
+            "Python"
+          ],
+          "intro": "Projen için doğru API'yi bulmaya devam et!",
+          "rows": [
+            {
+              "icon": "💻",
+              "k": "Proje:",
+              "v": "public-apis"
+            },
+            {
+              "icon": "⭐",
+              "k": "Yıldız:",
+              "v": "491.489"
+            },
+            {
+              "icon": "🎯",
+              "k": "Amaç:",
+              "v": "Ücretsiz API'leri bir arada bulmak"
+            },
+            {
+              "icon": "⚙️",
+              "k": "Kurulum:",
+              "v": "Kurulum gerekmiyor"
+            },
+            {
+              "icon": "📝",
+              "k": "Ekstra:",
+              "v": "Discord topluluğuna katıl"
+            }
+          ]
+        }
+      ]
     }
   ],
   "minStars": 10000,
